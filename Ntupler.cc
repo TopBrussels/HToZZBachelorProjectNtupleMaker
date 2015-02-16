@@ -1,6 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// Ntuple.cc: This macro is intended to be an example analysis macro which works out of the box.           /////
 /////       It should serve as the first port of call for new users of the TopBrussels framework.             /////
+/////      (in addition it is used by Freya for occasional studies when she has time)                         /////
+/////     Last Modified: Mon 16 February 2015
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "TStyle.h"
@@ -9,7 +11,7 @@
 #include <sstream>
 #include <sys/stat.h>
 
-//user code
+//used TopTreeAnalysis classes
 #include "TopTreeProducer/interface/TRootRun.h"
 #include "../TopTreeProducer/interface/TRootEvent.h"
 #include "../TopTreeAnalysisBase/Selection/interface/SelectionTable.h"
@@ -28,7 +30,6 @@
 #include "../TopTreeAnalysisBase/MCInformation/interface/ResolutionFit.h"
 #include "../TopTreeAnalysisBase/MCInformation/interface/JetPartonMatching.h"
 #include "../TopTreeAnalysisBase/Reconstruction/interface/JetCorrectorParameters.h"
-#include "../TopTreeAnalysis/macros/Style.C"
 #include "../TopTreeAnalysisBase/MCInformation/interface/LumiReWeighting.h"
 
 using namespace std;
@@ -41,10 +42,6 @@ int main (int argc, char *argv[])
     
     clock_t start = clock();
     
-    
-    //SetStyle if needed
-    //setTDRStyle();
-    setMyStyle();
     
     /////////////////////
     // Configuration
@@ -62,6 +59,12 @@ int main (int argc, char *argv[])
     cout << "used config file: " << xmlfile << endl;
     cout << "********************************************************" << endl;
     
+    
+
+    cout << "********************************************************" << endl;
+    cout<<"creating datasets ..."<<endl;
+    cout << "********************************************************" << endl;
+    
     //Configuration output format
     TTree *configTree = new TTree("configTree","configuration Tree");
     TClonesArray* tcdatasets = new TClonesArray("Dataset",1000);
@@ -74,27 +77,35 @@ int main (int argc, char *argv[])
     ////////////////////////////////////
     
     AnalysisEnvironment anaEnv;
-    //    cout << "********************************************************" << endl;
-    //    cout<<"Loading environment ..."<<endl;
-    //    cout << "********************************************************" << endl;
+    cout << "********************************************************" << endl;
+    cout<<"Loading environment ..."<<endl;
+    cout << "********************************************************" << endl;
     AnalysisEnvironmentLoader anaLoad(anaEnv,xmlfile);
-    //    cout << "now done creating AnalysisEnvironmentLoader" << endl;
-    //    cout << "********************************************************" << endl;
+    
+    cout << anaEnv.JetCollection << " " <<  anaEnv.METCollection << " "
+    << anaEnv.ElectronCollection << " " << anaEnv.MuonCollection << " "
+    << anaEnv.PrimaryVertexCollection << " " << anaEnv.GenJetCollection << " "
+    << endl;
+    
+    int verbose = 2;//anaEnv.Verbose;
+
+    
+    cout << "now done creating AnalysisEnvironmentLoader" << endl;
+    cout << "********************************************************" << endl;
     new ((*tcAnaEnv)[0]) AnalysisEnvironment(anaEnv);
-    int verbose = anaEnv.Verbose;
+    verbose = anaEnv.Verbose;
     float oldLuminosity = anaEnv.Luminosity;	// in 1/pb
     
-    //    cout << "analysis environment luminosity for rescaling "<< oldLuminosity << endl;
-    
-    /////////////////////
-    // Load Datasets
-    /////////////////////
+    Double_t muoneffaverage[2]={0,0};
+    Double_t jeteffaverage[2]={0,0};
+    Double_t eleeffaverage[2]={0,0};
     
     TTreeLoader treeLoader;
     //    cout << " - Load datasets ..." << endl;
     vector < Dataset* > datasets;
     
     treeLoader.LoadDatasets (datasets, xmlfile);
+    cout << "now loaded " << datasets.size() << " datasets" << endl;
     for(unsigned int i=0;i<datasets.size();i++) new ((*tcdatasets)[i]) Dataset(*datasets[i]);
     
     float Luminosity = oldLuminosity;
@@ -118,28 +129,10 @@ int main (int argc, char *argv[])
     double NEvtsData = 0;
     Double_t *nEvents = new Double_t[datasets.size()];
     
-    
-    ////////////////////////
-    // PileUp Reweighting //
-    ////////////////////////
-    
-    //cout << Luminosity << endl;
-    
-    LumiReWeighting LumiWeights, LumiWeightsUp, LumiWeightsDown;
-    
-    LumiWeights = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_Summer12_S10.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2012Data53X_UpToRun208357/nominal.root", "pileup", "pileup");
-    LumiWeightsUp = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_Summer12_S10.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2012Data53X_UpToRun208357/sys_up.root", "pileup", "pileup");
-    LumiWeightsDown = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_Summer12_S10.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2012Data53X_UpToRun208357/sys_down.root", "pileup", "pileup");
-    
-    //    cout << "********************************************************" << endl;
-    //    cout << " Initialized LumiReWeighting stuff" << endl;
-    //    cout << "********************************************************" << endl;
     ////////////////////////////////////
     //	Loop on datasets
     ////////////////////////////////////
     
-    //    if (verbose > 0)
-    //        cout << " - Loop over datasets ... " << datasets.size () << " datasets !" << endl;
     for (unsigned int d = 0; d < datasets.size (); d++) {
         
         string previousFilename = "";
@@ -155,17 +148,19 @@ int main (int argc, char *argv[])
         roottreename+="_tree.root";
 	//        cout << "creating tree in file " << roottreename << endl;
         
+        // create the output file that is used for further analysis. This file can contain histograms and/or trees (in this case only a tree)
         TFile *fileout = new TFile (roottreename.c_str(), "RECREATE");
         fileout->cd();
-        /////////////////////
-        // My tree         //
-        ////////////////////
+        //////////////////////////////
+        // My tree - variables      //
+        //////////////////////////////
         Int_t nElectrons;
         Double_t pX_electron[10];
         Double_t pY_electron[10];
         Double_t pZ_electron[10];
         Double_t E_electron[10];
-	Double_t pfIso_electron[10];
+        Double_t d0_electron[10];
+        Double_t pfIso_electron[10];
         Int_t charge_electron[10];
         
         Int_t nMuons;
@@ -173,7 +168,8 @@ int main (int argc, char *argv[])
         Double_t pY_muon[10];
         Double_t pZ_muon[10];
         Double_t E_muon[10];
-	Double_t pfIso_muon[10];
+        Double_t d0_muon[10];
+        Double_t pfIso_muon[10];
         Int_t charge_muon[10];
         
         Int_t nJets;
@@ -181,14 +177,14 @@ int main (int argc, char *argv[])
         Double_t pY_jet[10];
         Double_t pZ_jet[10];
         Double_t E_jet[10];
-        
+        Double_t dx_jet[10];
+        Double_t dy_jet[10];
         Double_t missingEt;
-        
         Int_t isdata;
         // various weights
         Double_t pu_weight;
         
-        
+        // define the output tree
         TTree* myTree = new TTree("tree","tree");
         myTree->Branch("isdata",&isdata,"isdata/I");
         
@@ -199,6 +195,8 @@ int main (int argc, char *argv[])
         myTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
         myTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
         myTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
+        myTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+
         
         myTree->Branch("nMuons",&nMuons, "nMuons/I");
         myTree->Branch("pX_muon",pX_muon,"pX_muon[nMuons]/D");
@@ -207,12 +205,15 @@ int main (int argc, char *argv[])
         myTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
         myTree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
         myTree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
+        myTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
         
         myTree->Branch("nJets",&nJets, "nJets/I");
         myTree->Branch("pX_jet",pX_jet,"pX_jet[nJets]/D");
         myTree->Branch("pY_jet",pY_jet,"pY_jet[nJets]/D");
         myTree->Branch("pZ_jet",pZ_jet,"pZ_jet[nJets]/D");
         myTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
+        myTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
+        myTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
         
         myTree->Branch("missingEt",&missingEt,"missingEt/D");
         myTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
@@ -223,35 +224,18 @@ int main (int argc, char *argv[])
         
         
         //open files and load
-	//        cout<<"LoadEvent"<<endl;
         treeLoader.LoadDataset (datasets[d], anaEnv);
-	//        cout<<"LoadEvent"<<endl;
         
         
-        
-        /////////////////////////////////////
-        /// Initialize JEC factors
-        /////////////////////////////////////
-   	    
+        //////////////////////////////////////////////////
+        /// Initialize Jet energy correction factors   ///
+        //////////////////////////////////////////////////
+   	   
         vector<JetCorrectorParameters> vCorrParam;
-        
-        /*JetCorrectorParameters *L3JetPar  = new JetCorrectorParameters("../../TopTreeAnalysisBase/Calibrations/JECFiles/Summer12_V3_MC_L3Absolute_AK5PFchs.txt");
-         JetCorrectorParameters *L2JetPar  = new JetCorrectorParameters("../../TopTreeAnalysisBase/Calibrations/JECFiles/Summer12_V3_MC_L2Relative_AK5PFchs.txt");
-         JetCorrectorParameters *L1JetPar  = new JetCorrectorParameters("../../TopTreeAnalysisBase/Calibrations/JECFiles/Summer12_V3_MC_L1FastJet_AK5PFchs.txt");
-         
-         //  Load the JetCorrectorParameter objects into a vector, IMPORTANT: THE ORDER MATTERS HERE !!!!
-         vCorrParam.push_back(*L1JetPar);
-         vCorrParam.push_back(*L2JetPar);
-         vCorrParam.push_back(*L3JetPar);
-         
-         if(dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0) { // DATA!
-         JetCorrectorParameters *ResJetCorPar = new JetCorrectorParameters("../../TopTreeAnalysisBase/Calibrations/JECFiles/Summer12_V3_DATA_L2L3Residual_AK5PFchs.txt");
-         vCorrParam.push_back(*ResJetCorPar);
-         }*/
         
         JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("../TopTreeAnalysisBase/Calibrations/JECFiles/Fall12_V6_DATA_UncertaintySources_AK5PFchs.txt", "Total")));
         
-        // true means redo also the L1
+        // true means redo also the L1 corrections (see CMS documentation to learn what this means)
         JetTools *jetTools = new JetTools(vCorrParam, jecUnc, true);
         
         
@@ -259,14 +243,19 @@ int main (int argc, char *argv[])
         //	Loop on events
         ////////////////////////////////////
         
+        // some bookkeeping variables
         nEvents[d] = 0;
         int itriggerSemiMu = -1,itriggerSemiEl = -1, previousRun = -1;
         
+        // some printout
+        cout << "running over " << datasets[d]->NofEvtsToRunOver() << endl;
         
+        // start event loop
         for (unsigned int ievt = 0; ievt < datasets[d]->NofEvtsToRunOver(); ievt++) // event loop
-            //for (unsigned int ievt = 0; ievt < 20000; ievt++)
+            //for (unsigned int ievt = 0; ievt < 20000; ievt++) // if lazy for testing
         {
             
+            // the objects loaded in each event
             vector < TRootVertex* > vertex;
             vector < TRootMuon* > init_muons;
             vector < TRootElectron* > init_electrons;
@@ -285,6 +274,10 @@ int main (int argc, char *argv[])
             ////////////////
             
             TRootEvent* event = treeLoader.LoadEvent (ievt, vertex, init_muons, init_electrons, init_jets_corrected, mets);
+            
+            
+            
+            // determine if this is data from the data set name (watch out)
             isdata=0;
             if(! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) ) {
                 genjets = treeLoader.LoadGenJet(ievt,false);
@@ -304,21 +297,19 @@ int main (int argc, char *argv[])
             
             // PU reweighting
             
-            double lumiWeight = LumiWeights.ITweight( (int)event->nTruePU() );
+            double lumiWeight = 1 ; //LumiWeights.ITweight( (int)event->nTruePU() ); // currently no pile-up reweigting applied
 
             if(dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0)
                 lumiWeight=1;
             
-            // up syst -> lumiWeight = LumiWeightsUp.ITweight( (int)event->nTruePU() );
-            // down syst -> lumiWeight = LumiWeightsDown.ITweight( (int)event->nTruePU() );
-            
+    // filled into output file
             pu_weight=lumiWeight;
             
             scaleFactor = scaleFactor*lumiWeight;
             
-            ///////////////////
-            // TRIGGER SETUP //
-            ///////////////////
+            /////////////////////////////////
+            // print when you change file  //
+            /////////////////////////////////
             
             string currentFilename = datasets[d]->eventTree()->GetFile()->GetName();
             if(previousFilename != currentFilename){
@@ -327,6 +318,7 @@ int main (int argc, char *argv[])
                 cout<<"File changed!!! => iFile = "<<iFile << " new file is " << datasets[d]->eventTree()->GetFile()->GetName() << " in sample " << dataSetName << endl;
             }
             
+            // get run number
             int currentRun = event->runId();
             
             if(previousRun != currentRun)
@@ -336,20 +328,22 @@ int main (int argc, char *argv[])
             /////////////////////////////////////////////////////////////////////////////
             // JES SYSTEMATICS && SMEAR JET RESOLUTION TO MIMIC THE RESOLUTION IN DATA //
             /////////////////////////////////////////////////////////////////////////////
-            
-            if( ! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) )
-                
-                jetTools->correctJetJER(init_jets_corrected, genjets, mets[0], "nominal",false);
+            // not applied during CSA14/PHYS14
+            //            if( ! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) )
+            //
+            //                jetTools->correctJetJER(init_jets_corrected, genjets, mets[0], "nominal",false);
             
             /////////////////////
             // EVENT SELECTION //
             /////////////////////
             
             //Declare selection instance
-            Selection selection(init_jets_corrected, init_muons, init_electrons, mets, event->kt6PFJets_rho());
-            selection.setJetCuts(20,2.5,0.01,1.,0.98,0.3,0.1); // standard TOP jet selection
-            selection.setMuonCuts(5,2.5,0.4,0.2,0.3,1,0.5,5,0); // standard mu selection but with looser iso
-            selection.setElectronCuts(10,2.5,0.4,0.02,0.5,0.3,0); // standard ele selection but with looser iso
+            Selection selection(init_jets_corrected, init_muons, init_electrons, mets);
+
+            // the default selection is fine for normal use - if you want a special selection you can use the functions here
+            //selection.setJetCuts(20,2.5,0.01,1.,0.98,0.3,0.1); //  void setJetCuts(float Pt, float Eta, float EMF, float n90Hits, float fHPD, float dRJetElectron, float dRJetMuon);
+            selection.setMuonCuts(20,2.5,1.0,2.0,0.3,1,0.5,5,0); // void setMuonCuts(float Pt, float Eta, float RelIso, float d0, float DRJets, int NMatchedStations, float Dz, int NTrackerLayersWithMeas, int NValidPixelHits);
+            selection.setElectronCuts(20,2.5,1.0,2.0,0.5,0.4,0); // void setElectronCuts(float Pt, float Eta, float RelIso, float d0, float MVAId, float DRJets, int MaxMissingHits);
             
             bool isGoodPV = selection.isPVSelected(vertex, 4, 24, 2.);
             
@@ -357,75 +351,79 @@ int main (int argc, char *argv[])
                 continue;
             
             missingEt=mets[0]->Pt();
-            
+
+            // get the 'good' objects from the selection object
             vector<TRootJet*> selectedJets= selection.GetSelectedJets(true);
-            
             vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons(vertex[0],selectedJets);
-            
             vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons(selectedJets);
             
+            // bookkeeping
+            eleeffaverage[0]+=init_electrons.size()*scaleFactor;
+            eleeffaverage[1]+=selectedElectrons.size()*scaleFactor;
+            muoneffaverage[0]+=init_muons.size()*scaleFactor;
+            muoneffaverage[1]+=selectedMuons.size()*scaleFactor;
+            jeteffaverage[0]+=init_jets_corrected.size()*scaleFactor;
+            jeteffaverage[1]+=selectedJets.size()*scaleFactor;
+            
+            
+            // loop over electrons
             nElectrons=0;
             for(int iele=0; iele<selectedElectrons.size() && nElectrons<10; iele++){
                 pX_electron[nElectrons]=selectedElectrons[iele]->Px();
                 pY_electron[nElectrons]=selectedElectrons[iele]->Py();
                 pZ_electron[nElectrons]=selectedElectrons[iele]->Pz();
                 E_electron[nElectrons]=selectedElectrons[iele]->E();
-                Double_t isocorr=0;
-                
-                // get isolation out, start by getting pu corrections
-                if(selectedElectrons[iele]->puChargedHadronIso()>0){
-                    isocorr = selectedElectrons[iele]->puChargedHadronIso();
-                    
-                }
-                else{
-                    // go through loads of pain to get rho correction, no function available. code below taken from TRootElectron selector in TopTreeAnalysisBase/*/Selector.cc
-                    double EffectiveArea = 0.;
-                    
-                    // HCP 2012 updated for electron conesize = 0.3, taken from http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/UserCode/EGamma/EGammaAnalysisTools/interface/ElectronEffectiveArea.h?revision=1.4&view=markup
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 0.0 && fabs(selectedElectrons[iele]->superClusterEta()) < 1.0 ) EffectiveArea = 0.130;
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 1.0 && fabs(selectedElectrons[iele]->superClusterEta()) < 1.479 ) EffectiveArea = 0.137;
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 1.479 && fabs(selectedElectrons[iele]->superClusterEta()) < 2.0 ) EffectiveArea = 0.067;
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 2.0 && fabs(selectedElectrons[iele]->superClusterEta()) < 2.2 ) EffectiveArea = 0.089;
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 2.2 && fabs(selectedElectrons[iele]->superClusterEta()) < 2.3 ) EffectiveArea = 0.107;
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 2.3 && fabs(selectedElectrons[iele]->superClusterEta()) < 2.4 ) EffectiveArea = 0.110;
-                    if (fabs(selectedElectrons[iele]->superClusterEta()) >= 2.4) EffectiveArea = 0.138;
-                    isocorr = event->kt6PFJets_rho()*EffectiveArea;
-                }
-                
-                pfIso_electron[nElectrons]=(selectedElectrons[iele]->chargedHadronIso() + max( selectedElectrons[iele]->neutralHadronIso() + selectedElectrons[iele]->photonIso()  - isocorr, 0.) )/ selectedElectrons[iele]->Pt();
+                d0_electron[nElectrons]=selectedElectrons[iele]->d0();
+               
+
+                pfIso_electron[nElectrons]=selectedElectrons[iele]->relPfIso(3,0);
                 charge_electron[nElectrons]=selectedElectrons[iele]->charge();
                 nElectrons++;
             }
+            // loop over muons
             nMuons=0;
             for(int imuo=0; imuo<selectedMuons.size() && nMuons<10; imuo++){
                 pX_muon[nMuons]=selectedMuons[imuo]->Px();
                 pY_muon[nMuons]=selectedMuons[imuo]->Py();
                 pZ_muon[nMuons]=selectedMuons[imuo]->Pz();
                 E_muon[nMuons]=selectedMuons[imuo]->E();
-                pfIso_muon[nMuons]=(selectedMuons[imuo]->chargedHadronIso() + max( 0.0, selectedMuons[imuo]->neutralHadronIso() + selectedMuons[imuo]->photonIso() - 0.5*selectedMuons[imuo]->puChargedHadronIso() ) ) / selectedMuons[imuo]->Pt(); // dBeta corrected
+                d0_muon[nMuons]=selectedMuons[imuo]->d0();
+                pfIso_muon[nMuons]=selectedMuons[imuo]->relPfIso(3,0);
 
 
                 charge_muon[nMuons]=selectedMuons[imuo]->charge();
                 nMuons++;
             }
+            // loop over jets
             nJets=0;
             for(int ijet=0; ijet<selectedJets.size() && nJets<10; ijet++){
                 pX_jet[nJets]=selectedJets[ijet]->Px();
                 pY_jet[nJets]=selectedJets[ijet]->Py();
                 pZ_jet[nJets]=selectedJets[ijet]->Pz();
                 E_jet[nJets]=selectedJets[ijet]->E();
+                dx_jet[nJets]=selectedJets[ijet]->vx();
+                dy_jet[nJets]=selectedJets[ijet]->vy();
                 nJets++;
             }
 
             
-            if(nElectrons+nMuons>=4 ){
+            if(1){ // ALLWAYS fill the tree
                 myTree->Fill();
-                //cout << "found " << nMuons << " muons and " << nElectrons << " electrons!" << endl;
             }
             
         }			//loop on events
         
+        cout << "number of (weighted) selected jets: " << jeteffaverage[1] ; if(jeteffaverage[0]>0) cout << " at efficiency of " << jeteffaverage[1]/jeteffaverage[0];
+        cout << endl;
+        cout << "number of (weighted) selected electrons: " << eleeffaverage[1] ; if(eleeffaverage[0]>0) cout << " at efficiency of " << eleeffaverage[1]/eleeffaverage[0];
+        cout << endl;
+        cout << "number of (weighted) selected muons: " << muoneffaverage[1] ; if(muoneffaverage[0]>0) cout << " at efficiency of " << muoneffaverage[1]/muoneffaverage[0];
+        cout << endl;
+
+
+        
 	cout<<endl;
+        
         
         
         //////////////
@@ -446,14 +444,7 @@ int main (int argc, char *argv[])
         
     }				//loop on datasets
     
-    //Once everything is filled ...
-    //    if (verbose > 0)
-    //        cout << " We ran over all the data ;-)" << endl;
-    
-    // Do some special things with certain plots (normalize, BayesDivide, ... )
-    //    if (verbose > 0)
-    //        cout << "Treating the special plots." << endl;
-    
+
     delete tcdatasets;
     delete tcAnaEnv;
     delete configTree;
