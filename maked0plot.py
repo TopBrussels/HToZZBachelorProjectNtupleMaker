@@ -28,6 +28,8 @@ lve=ROOT.TLorentzVector()
 # for bookkeeping
 ii=0
 nevents=ch.GetEntries()
+
+# start of loop over events
 for iev in ch:
     if ii % 10000 ==0 :
         print ii, "/", nevents
