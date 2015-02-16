@@ -23,6 +23,7 @@
 #include "../TopTreeAnalysisBase/Content/interface/Dataset.h"
 #include "../TopTreeAnalysisBase/MCInformation/interface/MCWeighter.h"
 #include "../TopTreeAnalysisBase/Selection/interface/ElectronPlotter.h"
+#include "../TopTreeAnalysisBase/Selection/interface/Selection.h"
 #include "../TopTreeAnalysisBase/Selection/interface/MuonPlotter.h"
 #include "../TopTreeAnalysisBase/Selection/interface/JetPlotter.h"
 #include "../TopTreeAnalysisBase/Selection/interface/VertexPlotter.h"
@@ -281,7 +282,7 @@ int main (int argc, char *argv[])
             isdata=0;
             if(! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) ) {
                 genjets = treeLoader.LoadGenJet(ievt,false);
-                sort(genjets.begin(),genjets.end(),HighestPt()); // HighestPt() is included from the Selection class
+                //sort(genjets.begin(),genjets.end(),HighestPt()); // HighestPt() is included from the Selection class
             }
             else{
                 isdata=1;
