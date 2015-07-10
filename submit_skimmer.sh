@@ -32,7 +32,7 @@ do
 
 	else
 
-            echo "nohup python "`pwd`"/../AutomaticTopTreeProducer/SkimTopTree.py --srmcp --use-pbs -t "$TOPPRODPATH" -l "$datasetpath"/ -s "$skimfile"  --publish "$SKIMNAME"/"$subdataset" -j 4 -n 10 -w 100 --email fblekman@cern.ch  --announce" &
+            echo "nohup python "`pwd`"/../AutomaticTopTreeProducer/SkimTopTree.py --srmcp --use-pbs -t "$TOPPRODPATH" -l "$datasetpath"/ -s "$skimfile"  --publish "$SKIMNAME"/"$subdataset" -j 4 -n 10 -w 100 --email fblekman@cern.ch  --announce &" 
     
 	fi
 	let "counter++"
