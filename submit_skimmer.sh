@@ -5,6 +5,10 @@ SKIMNAME=$2
 skimfile=$1
 TOPPRODPATH=`pwd`/../TopTreeProducer
 
+njobs=5
+counter=0
+ii=0
+
 echo "#usage: . submit_skimmer.sh /path/to/my/skim.xml myskimname"
 
 for dataset in `ls $inputdir`
@@ -20,9 +24,19 @@ do
 	finaldatasetpath=$newdatasetpath/`ls $newdatasetpath`
 	datasetpath=$finaldatasetpath
 #        echo $datasetpath
-        echo "nohup python "`pwd`"/../AutomaticTopTreeProducer/SkimTopTree.py --srmcp -t "$TOPPRODPATH" -l "$datasetpath"/ -s "$skimfile"  --publish "$SKIMNAME"/"$subdataset" -j 4 -n 10 -w 100 --email fblekman@cern.ch  --announce"
 
 #	echo "nohup python /user/fblekman/localgrid/TopTreeWork74X/CMSSW_7_4_3/src/TopBrussels/AutomaticTopTreeProducer/SkimTopTree.py --use-pbs  -t /user/fblekman/localgrid/TopTreeWork74X/CMSSW_7_4_3/src/TopBrussels/TopTreeProducer/ -l "$datasetpath"/ -s /user/fblekman/localgrid/TopTreeWork74X/CMSSW_7_4_3/src/TopBrussels/HToZZBachelorProjectNtupleMaker/skim.xml --publish SkimTests74X/"$subdataset"  -j 4 -n 10 -w 100 --email fblekman@cern.ch  --announce &; sleep 1"
+	if [ $ii = $njobs ]; then
+
+            echo "nohup python "`pwd`"/../AutomaticTopTreeProducer/SkimTopTree.py --srmcp --use-pbs -t "$TOPPRODPATH" -l "$datasetpath"/ -s "$skimfile"  --publish "$SKIMNAME"/"$subdataset" -j 4 -n 10 -w 100 --email fblekman@cern.ch  --announce" 
+
+	else
+
+            echo "nohup python "`pwd`"/../AutomaticTopTreeProducer/SkimTopTree.py --srmcp --use-pbs -t "$TOPPRODPATH" -l "$datasetpath"/ -s "$skimfile"  --publish "$SKIMNAME"/"$subdataset" -j 4 -n 10 -w 100 --email fblekman@cern.ch  --announce" &
+    
+	fi
+	let "counter++"
+	let "ii++"
 
     done
 done
