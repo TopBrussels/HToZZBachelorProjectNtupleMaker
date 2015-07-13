@@ -174,20 +174,27 @@ int main (int argc, char *argv[])
         Int_t charge_muon[10];
         
         Int_t nJets;
-        Double_t pX_jet[10];
-        Double_t pY_jet[10];
-        Double_t pZ_jet[10];
-        Double_t E_jet[10];
-        Double_t dx_jet[10];
-        Double_t dy_jet[10];
+        Double_t pX_jet[20];
+        Double_t pY_jet[20];
+        Double_t pZ_jet[20];
+        Double_t E_jet[20];
+        Double_t dx_jet[20];
+        Double_t dy_jet[20];
+        Double_t btag_jet[20];
         Double_t missingEt;
         Int_t isdata;
         // various weights
         Double_t pu_weight;
+        Int_t run_num;
+        Int_t evt_num;
+        Int_t lumi_num;
         
         // define the output tree
         TTree* myTree = new TTree("tree","tree");
         myTree->Branch("isdata",&isdata,"isdata/I");
+        myTree->Branch("run_num",&run_num,"run_num/I");
+        myTree->Branch("evt_num",&evt_num,"evt_num/I");
+        myTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
         
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         myTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
@@ -215,9 +222,50 @@ int main (int argc, char *argv[])
         myTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
         myTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
         myTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
+        myTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
         
         myTree->Branch("missingEt",&missingEt,"missingEt/D");
         myTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
+        
+        TTree *noselTree = new TTree("noselTree","noselTree");
+        noselTree->Branch("isdata",&isdata,"isdata/I");
+        noselTree->Branch("run_num",&run_num,"run_num/I");
+        noselTree->Branch("evt_num",&evt_num,"evt_num/I");
+        noselTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        
+        noselTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
+        noselTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
+        noselTree->Branch("pY_electron",pY_electron,"pY_electron[nElectrons]/D");
+        noselTree->Branch("pZ_electron",pZ_electron,"pZ_electron[nElectrons]/D");
+        noselTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
+        noselTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
+        noselTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
+        noselTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        
+        
+        noselTree->Branch("nMuons",&nMuons, "nMuons/I");
+        noselTree->Branch("pX_muon",pX_muon,"pX_muon[nMuons]/D");
+        noselTree->Branch("pY_muon",pY_muon,"pY_muon[nMuons]/D");
+        noselTree->Branch("pZ_muon",pZ_muon,"pZ_muon[nMuons]/D");
+        noselTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
+        noselTree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
+        noselTree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
+        noselTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
+        
+        noselTree->Branch("nJets",&nJets, "nJets/I");
+        noselTree->Branch("pX_jet",pX_jet,"pX_jet[nJets]/D");
+        noselTree->Branch("pY_jet",pY_jet,"pY_jet[nJets]/D");
+        noselTree->Branch("pZ_jet",pZ_jet,"pZ_jet[nJets]/D");
+        noselTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
+        noselTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
+        noselTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
+        noselTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        
+        
+        noselTree->Branch("missingEt",&missingEt,"missingEt/D");
+        noselTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
+
+        
         
 	//        myTree->Print();
 
@@ -275,7 +323,10 @@ int main (int argc, char *argv[])
             ////////////////
             
             TRootEvent* event = treeLoader.LoadEvent (ievt, vertex, init_muons, init_electrons, init_jets_corrected, mets);
-            
+            run_num=event->runId();
+            evt_num=event->eventId();
+            lumi_num=event->lumiBlockId();
+
             
             
             // determine if this is data from the data set name (watch out)
@@ -343,8 +394,8 @@ int main (int argc, char *argv[])
 
             // the default selection is fine for normal use - if you want a special selection you can use the functions here
             //selection.setJetCuts(20,2.5,0.01,1.,0.98,0.3,0.1); //  void setJetCuts(float Pt, float Eta, float EMF, float n90Hits, float fHPD, float dRJetElectron, float dRJetMuon);
-            selection.setMuonCuts(20,2.5,1.0,2.0,0.3,1,0.5,5,0); // void setMuonCuts(float Pt, float Eta, float RelIso, float d0, float DRJets, int NMatchedStations, float Dz, int NTrackerLayersWithMeas, int NValidPixelHits);
-            selection.setElectronCuts(20,2.5,1.0,2.0,0.5,0.4,0); // void setElectronCuts(float Pt, float Eta, float RelIso, float d0, float MVAId, float DRJets, int MaxMissingHits);
+            //selection.setMuonCuts(20,2.5,1.0,2.0,0.3,1,0.5,5,0); // void setMuonCuts(float Pt, float Eta, float RelIso, float d0, float DRJets, int NMatchedStations, float Dz, int NTrackerLayersWithMeas, int NValidPixelHits);
+//            selection.setElectronCuts(20,2.5,1.0,2.0,0.5,0.4,0); // void setElectronCuts(float Pt, float Eta, float RelIso, float d0, float MVAId, float DRJets, int MaxMissingHits);
             
             bool isGoodPV = selection.isPVSelected(vertex, 4, 24, 2.);
             
@@ -397,20 +448,73 @@ int main (int argc, char *argv[])
             }
             // loop over jets
             nJets=0;
-            for(int ijet=0; ijet<selectedJets.size() && nJets<10; ijet++){
+            for(int ijet=0; ijet<selectedJets.size() && nJets<20; ijet++){
                 pX_jet[nJets]=selectedJets[ijet]->Px();
                 pY_jet[nJets]=selectedJets[ijet]->Py();
                 pZ_jet[nJets]=selectedJets[ijet]->Pz();
                 E_jet[nJets]=selectedJets[ijet]->E();
                 dx_jet[nJets]=selectedJets[ijet]->vx();
                 dy_jet[nJets]=selectedJets[ijet]->vy();
+                btag_jet[nJets]=selectedJets[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
                 nJets++;
             }
 
             
-            if(1){ // ALLWAYS fill the tree
+            if(nElectrons+nMuons>0){ // ALLWAYS fill the tree
                 myTree->Fill();
             }
+            // loop over electrons
+            nElectrons=0;
+            for(int iele=0; iele<init_electrons.size() && nElectrons<10; iele++){
+                pX_electron[nElectrons]=init_electrons[iele]->Px();
+                pY_electron[nElectrons]=init_electrons[iele]->Py();
+                
+                if(sqrt(pow(pX_electron[nElectrons],2)+pow(pY_electron[nElectrons],2))<20)
+                    continue;
+
+                pZ_electron[nElectrons]=init_electrons[iele]->Pz();
+                E_electron[nElectrons]=init_electrons[iele]->E();
+                d0_electron[nElectrons]=init_electrons[iele]->d0();
+                
+                
+                pfIso_electron[nElectrons]=init_electrons[iele]->relPfIso(3,0);
+                charge_electron[nElectrons]=init_electrons[iele]->charge();
+                nElectrons++;
+            }
+            // loop over muons
+            nMuons=0;
+            for(int imuo=0; imuo<init_muons.size() && nMuons<10; imuo++){
+                pX_muon[nMuons]=init_muons[imuo]->Px();
+                pY_muon[nMuons]=init_muons[imuo]->Py();
+                if(sqrt(pow(pX_muon[nMuons],2)+pow(pY_muon[nMuons],2))<20)
+                    continue;
+                pZ_muon[nMuons]=init_muons[imuo]->Pz();
+                E_muon[nMuons]=init_muons[imuo]->E();
+                d0_muon[nMuons]=init_muons[imuo]->d0();
+                pfIso_muon[nMuons]=init_muons[imuo]->relPfIso(3,0);
+                
+                
+                charge_muon[nMuons]=init_muons[imuo]->charge();
+                nMuons++;
+            }
+            // loop over jets
+            nJets=0;
+            for(int ijet=0; ijet<init_jets_corrected.size() && nJets<20; ijet++){
+                pX_jet[nJets]=init_jets_corrected[ijet]->Px();
+                pY_jet[nJets]=init_jets_corrected[ijet]->Py();
+                
+                if(sqrt(pow(pX_jet[nJets],2)+pow(pY_jet[nJets],2))<20)
+                    continue;
+
+                pZ_jet[nJets]=init_jets_corrected[ijet]->Pz();
+                E_jet[nJets]=init_jets_corrected[ijet]->E();
+                dx_jet[nJets]=init_jets_corrected[ijet]->vx();
+                dy_jet[nJets]=init_jets_corrected[ijet]->vy();
+                btag_jet[nJets]=init_jets_corrected[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
+                nJets++;
+            }
+            if(nElectrons+nMuons>0)
+                noselTree->Fill();
             
         }			//loop on events
         
