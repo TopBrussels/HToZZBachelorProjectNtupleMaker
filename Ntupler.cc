@@ -152,6 +152,9 @@ int main (int argc, char *argv[])
         // create the output file that is used for further analysis. This file can contain histograms and/or trees (in this case only a tree)
         TFile *fileout = new TFile (roottreename.c_str(), "RECREATE");
         fileout->cd();
+        
+        TH1F *bookkeeping = new TH1F("bookkeeping","",10,0,10);
+        bookkeeping->Sumw2();
         //////////////////////////////
         // My tree - variables      //
         //////////////////////////////
@@ -304,6 +307,7 @@ int main (int argc, char *argv[])
             //for (unsigned int ievt = 0; ievt < 20000; ievt++) // if lazy for testing
         {
             
+            bookkeeping->Fill(0);
             // the objects loaded in each event
             vector < TRootVertex* > vertex;
             vector < TRootMuon* > init_muons;
@@ -462,6 +466,7 @@ int main (int argc, char *argv[])
             
             if(nElectrons+nMuons>0){ // ALLWAYS fill the tree
                 myTree->Fill();
+                bookkeeping->Fill(1);
             }
             // loop over electrons
             nElectrons=0;
@@ -513,8 +518,10 @@ int main (int argc, char *argv[])
                 btag_jet[nJets]=init_jets_corrected[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
                 nJets++;
             }
-            if(nElectrons+nMuons>0)
+            if(nElectrons+nMuons>0){
                 noselTree->Fill();
+                bookkeeping->Fill(2);
+            }
             
         }			//loop on events
         
