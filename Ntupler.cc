@@ -153,8 +153,6 @@ int main (int argc, char *argv[])
         TFile *fileout = new TFile (roottreename.c_str(), "RECREATE");
         fileout->cd();
         
-        TH1F *bookkeeping = new TH1F("bookkeeping","",10,0,10);
-        bookkeeping->Sumw2();
         //////////////////////////////
         // My tree - variables      //
         //////////////////////////////
@@ -191,6 +189,12 @@ int main (int argc, char *argv[])
         Int_t run_num;
         Int_t evt_num;
         Int_t lumi_num;
+        
+        TTree *bookkeeping = new TTree("startevents","startevents");
+        bookkeeping->Branch("run_num",&run_num,"run_num/I");
+        bookkeeping->Branch("evt_num",&evt_num,"evt_num/I");
+        bookkeeping->Branch("lumi_num",&lumi_num,"lumi_num/I");
+
         
         // define the output tree
         TTree* myTree = new TTree("tree","tree");
@@ -307,7 +311,6 @@ int main (int argc, char *argv[])
             //for (unsigned int ievt = 0; ievt < 20000; ievt++) // if lazy for testing
         {
             
-            bookkeeping->Fill(0);
             // the objects loaded in each event
             vector < TRootVertex* > vertex;
             vector < TRootMuon* > init_muons;
@@ -330,6 +333,8 @@ int main (int argc, char *argv[])
             run_num=event->runId();
             evt_num=event->eventId();
             lumi_num=event->lumiBlockId();
+            
+            bookkeeping->Fill();
 
             
             
@@ -466,7 +471,6 @@ int main (int argc, char *argv[])
             
             if(nElectrons+nMuons>0){ // ALLWAYS fill the tree
                 myTree->Fill();
-                bookkeeping->Fill(1);
             }
             // loop over electrons
             nElectrons=0;
@@ -520,7 +524,6 @@ int main (int argc, char *argv[])
             }
             if(nElectrons+nMuons>0){
                 noselTree->Fill();
-                bookkeeping->Fill(2);
             }
             
         }			//loop on events
