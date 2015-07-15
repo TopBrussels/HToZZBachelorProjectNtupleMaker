@@ -8,7 +8,7 @@ import ROOT
 # the analysis structure see TTree/TChain description on root.cern.ch
 ch = ROOT.TChain("tree","tree")
 # TChain accepts wildcards and ~infinite numbers of input files! So no need to merge files!
-ch.Add("../Data*.root")
+ch.Add("../../../datafiles/CMSSW_74X_v2-ntuples/MuonEG*.root")
 # very loud but useful to know what variables are stored in a tree... it prints them all
 ch.Print()
 
@@ -25,6 +25,7 @@ h_njets = ROOT.TH1F("h_njets","jet mult",10,0,10)
 # using lorentz vectors as easy to calculate angles, pseudorapidity, etc
 lvmu=ROOT.TLorentzVector()
 lve=ROOT.TLorentzVector()
+lvjet=ROOT.TLorentzVector()
 
 # for bookkeeping
 ii=0
@@ -60,8 +61,15 @@ for iev in ch:
         h_eleeta.Fill(lve.Eta())
         h_elept.Fill(lve.Pt())
         h_eled0.Fill(abs(iev.d0_electron[iele]))
-    if iev.nJets == 2:
-       print  iev.run_num,":",iev.lumi_num,":",iev.evt_num
+    if iev.nJets >= 2:
+        print  iev.run_num,":",iev.lumi_num,":",iev.evt_num
+        print "electron Pt:",lve.Pt()," eta:",lve.Eta()," phi:",lve.Phi()
+        print "muon Pt:",lvmu.Pt()," eta:",lvmu.Eta()," phi:",lvmu.Phi()
+        print "met: ",iev.missingEt
+        for ijet in range(0,iev.nJets) :
+            lvjet.SetPxPyPzE(iev.pX_jet[ijet],iev.pY_jet[ijet],iev.pZ_jet[ijet],iev.E_jet[ijet])
+            print "jet Pt:",lvjet.Pt()," eta:",lvjet.Eta()," phi:",lvjet.Phi()," btag:",iev.btag_jet[ijet]
+
 # end of loop
 
 
