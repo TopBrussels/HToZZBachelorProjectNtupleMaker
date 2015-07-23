@@ -11,7 +11,7 @@ import ROOT
 # very loud but useful to know what variables are stored in a tree... it prints them all
 #ch.Print()
 
-lumi=11.8
+lumi=15.167
 # book some histograms
 outfile = ROOT.TFile("output_muons.root","recreate")
 outfile.cd()
@@ -42,10 +42,10 @@ stack_muzpeak = ROOT.THStack("stack_zpeak","m(mumu)")
 names=["Wjets","Zjets","ttbar","data"]
 colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kBlack]
 xsecs=[20508.9,2008.4,800,-1]
-filenames=["../../../datafiles/CMSSW_74X_v2-ntuples/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-50ns*.root",
-        "../../../datafiles/CMSSW_74X_v2-ntuples/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-50n*.root",
-        "../../../datafiles/CMSSW_74X_v2-ntuples/TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8-50ns*.root",
-        "../../../datafiles/CMSSW_74X_v2-ntuples/SingleMuon*.root"]
+filenames=["../../../datafiles/CMSSW_74X_v3-ntuples/*WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-50ns*.root",
+        "../../../datafiles/CMSSW_74X_v3-ntuples/*DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-50n*.root",
+        "../../../datafiles/CMSSW_74X_v3-ntuples/*TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8-50ns*.root",
+        "../../../datafiles/CMSSW_74X_v3-ntuples/*SingleMuon*.root"]
 
 print xsecs
 print filenames

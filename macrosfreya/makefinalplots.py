@@ -7,9 +7,9 @@ import array
 #set the tdr style
 tdrstyle.setTDRStyle()
 
-CMS_lumi.lumi_13TeV="L #approx 11.8 pb^{-1}"
+CMS_lumi.lumi_13TeV="L #approx 15.0 pb^{-1}"
 CMS_lumi.writeExtraText = 1
-CMS_lumi.extraText = "Super-Preliminary"
+CMS_lumi.extraText = "Super-Preliminary and 'standard' ID"
 
 
 iPos = 12
@@ -38,11 +38,12 @@ canvas.SetBottomMargin( B/H )
 canvas.SetTickx(0)
 canvas.SetTicky(0)
 
-file=rt.TFile("output_electrons.root","read")
+#file=rt.TFile("output_electrons.root","read")
 #file=rt.TFile("output_muons.root","read")
+file=rt.TFile("output_displaced.root","read")
 file.ls()
 #file.ls()
-listofnames=["h_elenjets_","h_elezpeak","h_eled0_"]
+listofnames=["h_eled0_","h_mud0_"]
 #listofnames=["h_munjets_","h_muzpeak","h_mud0_"]
 
 for histname in listofnames :
