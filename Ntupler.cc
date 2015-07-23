@@ -134,6 +134,9 @@ int main (int argc, char *argv[])
     //	Loop on datasets
     ////////////////////////////////////
     
+    LumiReWeighting LumiWeights;
+    LumiWeights = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt50ns.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_50ns-Run246908-251642Cert/nominal.root", "pileup", "pileup");
+    
     for (unsigned int d = 0; d < datasets.size (); d++) {
         
         string previousFilename = "";
@@ -189,11 +192,15 @@ int main (int argc, char *argv[])
         Int_t run_num;
         Int_t evt_num;
         Int_t lumi_num;
+        Int_t nvtx;
+        Int_t npu;
         
         TTree *bookkeeping = new TTree("startevents","startevents");
         bookkeeping->Branch("run_num",&run_num,"run_num/I");
         bookkeeping->Branch("evt_num",&evt_num,"evt_num/I");
         bookkeeping->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        bookkeeping->Branch("nvtx",&nvtx,"nvtx/I");
+        bookkeeping->Branch("npu",&npu,"npu/I");
 
         
         // define the output tree
@@ -202,6 +209,7 @@ int main (int argc, char *argv[])
         myTree->Branch("run_num",&run_num,"run_num/I");
         myTree->Branch("evt_num",&evt_num,"evt_num/I");
         myTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        myTree->Branch("nvtx",&nvtx,"nvtx/I");
         
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         myTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
@@ -239,6 +247,8 @@ int main (int argc, char *argv[])
         noselTree->Branch("run_num",&run_num,"run_num/I");
         noselTree->Branch("evt_num",&evt_num,"evt_num/I");
         noselTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        noselTree->Branch("nvtx",&nvtx,"nvtx/I");
+
         
         noselTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         noselTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
@@ -333,7 +343,11 @@ int main (int argc, char *argv[])
             run_num=event->runId();
             evt_num=event->eventId();
             lumi_num=event->lumiBlockId();
+            nvtx=vertex.size();
+            npu=(int)event->nTruePU();
+//            std::cout << "number of pv: " << nvtx << std::endl;
             
+        
             bookkeeping->Fill();
 
             
@@ -358,8 +372,8 @@ int main (int argc, char *argv[])
             
             // PU reweighting
             
-            double lumiWeight = 1 ; //LumiWeights.ITweight( (int)event->nTruePU() ); // currently no pile-up reweigting applied
-
+            double lumiWeight = LumiWeights.ITweight( nvtx ); // simplest reweighting, just use reconstructed number of PV.
+            
             if(dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0)
                 lumiWeight=1;
             
@@ -522,9 +536,9 @@ int main (int argc, char *argv[])
                 btag_jet[nJets]=init_jets_corrected[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
                 nJets++;
             }
-            if(nElectrons+nMuons>0){
-                noselTree->Fill();
-            }
+//            if(nElectrons+nMuons>0){
+//                noselTree->Fill();
+//            }
             
         }			//loop on events
         
