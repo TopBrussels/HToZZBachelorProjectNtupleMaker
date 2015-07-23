@@ -189,11 +189,13 @@ int main (int argc, char *argv[])
         Int_t run_num;
         Int_t evt_num;
         Int_t lumi_num;
+        Int_t nvtx;
         
         TTree *bookkeeping = new TTree("startevents","startevents");
         bookkeeping->Branch("run_num",&run_num,"run_num/I");
         bookkeeping->Branch("evt_num",&evt_num,"evt_num/I");
         bookkeeping->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        bookkeeping->Branch("nvtx",&nvtx,"nvtx/I");
 
         
         // define the output tree
@@ -202,6 +204,7 @@ int main (int argc, char *argv[])
         myTree->Branch("run_num",&run_num,"run_num/I");
         myTree->Branch("evt_num",&evt_num,"evt_num/I");
         myTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        myTree->Branch("nvtx",&nvtx,"nvtx/I");
         
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         myTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
@@ -239,6 +242,8 @@ int main (int argc, char *argv[])
         noselTree->Branch("run_num",&run_num,"run_num/I");
         noselTree->Branch("evt_num",&evt_num,"evt_num/I");
         noselTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        noselTree->Branch("nvtx",&nvtx,"nvtx/I");
+
         
         noselTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         noselTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
@@ -333,6 +338,8 @@ int main (int argc, char *argv[])
             run_num=event->runId();
             evt_num=event->eventId();
             lumi_num=event->lumiBlockId();
+            nvtx=vertex.size();
+//            std::cout << "number of pv: " << nvtx << std::endl;
             
             bookkeeping->Fill();
 
