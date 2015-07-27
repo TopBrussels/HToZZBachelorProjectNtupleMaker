@@ -23,7 +23,7 @@
 #include "../TopTreeAnalysisBase/Content/interface/Dataset.h"
 #include "../TopTreeAnalysisBase/MCInformation/interface/MCWeighter.h"
 #include "../TopTreeAnalysisBase/Selection/interface/ElectronPlotter.h"
-#include "../TopTreeAnalysisBase/Selection/interface/Selection.h"
+#include "../TopTreeAnalysisBase/Selection/interface/Run2Selection.h"
 #include "../TopTreeAnalysisBase/Selection/interface/MuonPlotter.h"
 #include "../TopTreeAnalysisBase/Selection/interface/JetPlotter.h"
 #include "../TopTreeAnalysisBase/Selection/interface/VertexPlotter.h"
@@ -39,7 +39,6 @@ using namespace TopTree;
 
 int main (int argc, char *argv[])
 {
-    
     
     clock_t start = clock();
     
@@ -101,6 +100,7 @@ int main (int argc, char *argv[])
     Double_t jeteffaverage[2]={0,0};
     Double_t eleeffaverage[2]={0,0};
     
+    TLorentzVector worker;
     TTreeLoader treeLoader;
     //    cout << " - Load datasets ..." << endl;
     vector < Dataset* > datasets;
@@ -135,7 +135,7 @@ int main (int argc, char *argv[])
     ////////////////////////////////////
     
     LumiReWeighting LumiWeights;
-    LumiWeights = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt50ns.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_50ns-Run246908-251642Cert/nominal.root", "pileup", "pileup");
+    LumiWeights = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt50ns.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_50ns-Run246908-251883Cert/nominal.root", "pileup", "pileup");
     
     for (unsigned int d = 0; d < datasets.size (); d++) {
         
@@ -167,6 +167,11 @@ int main (int argc, char *argv[])
         Double_t d0_electron[10];
         Double_t pfIso_electron[10];
         Int_t charge_electron[10];
+        Int_t loose_electron[10];
+        Int_t medium_electron[10];
+        Int_t tight_electron[10];
+        Int_t mediumMVA_electron[10];
+        Int_t tightMVA_electron[10];
         
         Int_t nMuons;
         Double_t pX_muon[10];
@@ -194,6 +199,12 @@ int main (int argc, char *argv[])
         Int_t lumi_num;
         Int_t nvtx;
         Int_t npu;
+        Int_t trig_dilepton_emu;
+        Int_t trig_dilepton_mumu;
+        Int_t trig_dilepton_ee;
+        Int_t trig_eplusjets;
+        Int_t trig_muplusjets;
+        Int_t trig_displaced;
         
         TTree *bookkeeping = new TTree("startevents","startevents");
         bookkeeping->Branch("run_num",&run_num,"run_num/I");
@@ -201,7 +212,6 @@ int main (int argc, char *argv[])
         bookkeeping->Branch("lumi_num",&lumi_num,"lumi_num/I");
         bookkeeping->Branch("nvtx",&nvtx,"nvtx/I");
         bookkeeping->Branch("npu",&npu,"npu/I");
-
         
         // define the output tree
         TTree* myTree = new TTree("tree","tree");
@@ -210,6 +220,20 @@ int main (int argc, char *argv[])
         myTree->Branch("evt_num",&evt_num,"evt_num/I");
         myTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
         myTree->Branch("nvtx",&nvtx,"nvtx/I");
+        myTree->Branch("npu",&npu,"npu/I");
+        myTree->Branch("trig_dilepton_emu",&trig_dilepton_emu,"trig_dilepton_emu/I");
+        myTree->Branch("trig_dilepton_ee",&trig_dilepton_ee,"trig_dilepton_ee/I");
+        myTree->Branch("trig_dilepton_mumu",&trig_dilepton_mumu,"trig_dilepton_mumu/I");
+        myTree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
+        myTree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
+        myTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
+
+
+
+
+
+        
+
         
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         myTree->Branch("pX_electron",pX_electron,"pX_electron[nElectrons]/D");
@@ -219,6 +243,12 @@ int main (int argc, char *argv[])
         myTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
         myTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
         myTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        myTree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
+        myTree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
+        myTree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
+//        myTree->Branch("mediumMVA_electron",mediumMVA_electron,"mediumMVA_electron[nElectrons]/I");
+//        myTree->Branch("tightMVA_electron",tightMVA_electron,"tightMVA_electron[nElectrons]/I");
+//
 
         
         myTree->Branch("nMuons",&nMuons, "nMuons/I");
@@ -322,6 +352,7 @@ int main (int argc, char *argv[])
         {
             
             // the objects loaded in each event
+            vector < TRootHLTInfo> hltinfo;
             vector < TRootVertex* > vertex;
             vector < TRootMuon* > init_muons;
             vector < TRootElectron* > init_electrons;
@@ -340,21 +371,129 @@ int main (int argc, char *argv[])
             ////////////////
             
             TRootEvent* event = treeLoader.LoadEvent (ievt, vertex, init_muons, init_electrons, init_jets_corrected, mets);
+            std::map<std::string, std::vector<TopTree::triggeredObject> > trigfilters = event->getTriggerFilters();
+            if(event->runId()!=run_num){
+//                hltinfo = treeLoader.getHLTInfo(event->runId());
+//                for(int itrigs=0; itrigs< hltinfo.size(), itrigs++){
+//                    
+//                    
+//                }
+                
+//            do trigger stuff
+//                for(int trigs = 0; trigs < event->nHLTPaths(); trigs++)
+//                {
+//                    std::cout << " trig# " << trigs << ", "<< event->trigHLT(trigs) << std::endl;
+//                    
+//                }
+                std::cout << "examining triggers for run: " << event->runId() << " number of triggers: " << trigfilters.size() << std::endl;
+                for(std::map<std::string, std::vector<TopTree::triggeredObject> >::iterator iter=trigfilters.begin(); iter!=trigfilters.end(); iter++){
+                    std::cout << iter->first
+//                    <<" " << iter->second()
+                    << std::endl;
+                    
+                }
+            }
             run_num=event->runId();
             evt_num=event->eventId();
             lumi_num=event->lumiBlockId();
             nvtx=vertex.size();
             npu=(int)event->nTruePU();
-//            std::cout << "number of pv: " << nvtx << std::endl;
+          
+            if( run_num > 10000){//data
+                isdata=1;
+            }
+            // trigger infos: (from https://twiki.cern.ch/twiki/bin/view/CMS/TopTrigger )
+                // eplusjets:
+                // 2015A: HLT_Ele27_eta2p1_WPLoose_Gsf_v1 || HLT_Ele27_eta2p1_WPLoose_Gsf_TriCentralPFJet30_v1 || HLT_Ele27_eta2p1_WPLoose_Gsf_TriCentralPFJet50_40_30_v1
+            trig_eplusjets=0;
+            if(isdata){
+                if(event->trigHLT(treeLoader.iTrigger("HLT_Ele27_eta2p1_WPLoose_Gsf_v1", run_num)))
+                    trig_eplusjets=1;
+                else if(event->trigHLT(treeLoader.iTrigger("HLT_Ele27_eta2p1_WPLoose_Gsf_TriCentralPFJet30_v1", run_num)))
+                    trig_eplusjets=1;
+                else if(event->trigHLT(treeLoader.iTrigger("HLT_Ele27_eta2p1_WPLoose_Gsf_TriCentralPFJet50_40_30_v1", run_num)))
+                    trig_eplusjets=1;
+            }
+            // and the MC triggers:
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_Ele27_eta2p1_WP75_Gsf_v1", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_Ele27_eta2p1_WP75_Gsf_TriCentralPFJet30_v1", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_Ele27_eta2p1_WP75_Gsf_TriCentralPFJet50_40_30_v1", run_num)) )
+                trig_eplusjets=1;
             
-        
+                // muplusjets:
+                // HLT_IsoMu20_eta2p1_v2 || HLT_IsoMu20_eta2p1_TriCentralPFJet30_v2 || HLT_IsoMu20_eta2p1_TriCentralPFJet50_40_30_v2
+            trig_muplusjets=0;
+            if(isdata){
+            if(event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_v2", run_num)))
+                trig_muplusjets=1;
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_TriCentralPFJet30_v2", run_num)))
+                trig_muplusjets=1;
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_TriCentralPFJet50_40_30_v2", run_num)))
+                trig_muplusjets=1;
+            }
+            // and the MC triggers:
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_v2", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_TriCentralPFJet30_v2", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_TriCentralPFJet50_40_30_v2", run_num)) )
+                trig_muplusjets=1;
+
+
+                // dilepton:
+                // ee: HLT_Ele17_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v2
+            
+            trig_dilepton_ee=0;
+            if(isdata){
+            if(event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_v2", run_num)))
+                trig_dilepton_ee=1;
+            }
+            // and the MC triggers:
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_Ele17_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v1", run_num)))
+                trig_dilepton_ee=1;
+            
+                // mumu: HLT_Mu17_TrkIsoVVL_(Tk)Mu8_TrkIsoVVL_DZ_v2 || HLT_IsoMu20_(eta2p1_)v2
+            trig_dilepton_mumu=0;
+            if(isdata){
+            if(event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_v2", run_num)))
+                trig_dilepton_mumu=1;
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_v2", run_num)))
+                trig_dilepton_mumu=1;
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_v2", run_num)))
+                trig_dilepton_mumu=1;
+            }
+            // and the MC triggers:
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_IsoMu20_eta2p1_v1 ", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v1 ", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_v1 ", run_num)) )
+                trig_dilepton_mumu=1;
+
+            
+                // emu: HLT_Mu17_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v2  || HLT_Mu8_TrkIsoVVL_Ele17_CaloIdL_TrackIdL_IsoVL_v2
+            trig_dilepton_emu=0;
+            if(isdata){
+            if(event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v2", run_num)))
+                trig_dilepton_emu=1;
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_Mu8_TrkIsoVVL_Ele17_CaloIdL_TrackIdL_IsoVL_v2", run_num)))
+                trig_dilepton_emu=1;
+            }
+            // and the MC triggers:
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_Mu17_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v1", run_num))
+                    || event->trigHLT(treeLoader.iTrigger("HLT_Mu8_TrkIsoVVL_Ele17_CaloIdL_TrackIdL_IsoVL_v1", run_num)) )
+                trig_dilepton_emu=1;
+            // displaced stuff
+
+            trig_displaced=0;
+            
+//            std::cout << treeLoader.iTrigger("HLT_Mu28NoFiltersNoVtxDisplaced_Photon28_CaloIdL_v2", run_num) << " " << event->trigHLT(treeLoader.iTrigger("HLT_Mu28NoFiltersNoVtxDisplaced_Photon28_CaloIdL_v2", run_num)) << " " << treeLoader.iTrigger("HLT_Mu33NoFiltersNoVtxDisplaced_Photon33_CaloIdL_v2", run_num) << " " << event->trigHLT(treeLoader.iTrigger("HLT_Mu28NoFiltersNoVtxDisplaced_Photon28_CaloIdL_v2", run_num)) << std::endl;
+            if(event->trigHLT(treeLoader.iTrigger("HLT_Mu28NoFiltersNoVtxDisplaced_Photon28_CaloIdL_v2", run_num)))
+                trig_displaced=1;
+            else if(event->trigHLT(treeLoader.iTrigger("HLT_Mu33NoFiltersNoVtxDisplaced_Photon33_CaloIdL_v2", run_num)))
+                trig_displaced=1;
+       
             bookkeeping->Fill();
 
             
             
-            // determine if this is data from the data set name (watch out)
-            isdata=0;
-            if(! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) ) {
+            if(! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) && !isdata ) {
                 genjets = treeLoader.LoadGenJet(ievt,false);
                 //sort(genjets.begin(),genjets.end(),HighestPt()); // HighestPt() is included from the Selection class
             }
@@ -372,7 +511,8 @@ int main (int argc, char *argv[])
             
             // PU reweighting
             
-            double lumiWeight = LumiWeights.ITweight( nvtx ); // simplest reweighting, just use reconstructed number of PV.
+	    //            double lumiWeight = LumiWeights.ITweight( nvtx ); // simplest reweighting, just use reconstructed number of PV.
+	    double lumiWeight = LumiWeights.ITweight( (int)event->nTruePU() ); // reweighting using number of true pv   
             
             if(dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0)
                 lumiWeight=1;
@@ -413,7 +553,7 @@ int main (int argc, char *argv[])
             /////////////////////
             
             //Declare selection instance
-            Selection selection(init_jets_corrected, init_muons, init_electrons, mets);
+            Run2Selection selection(init_jets_corrected, init_muons, init_electrons, mets);
 
             // the default selection is fine for normal use - if you want a special selection you can use the functions here
             //selection.setJetCuts(20,2.5,0.01,1.,0.98,0.3,0.1); //  void setJetCuts(float Pt, float Eta, float EMF, float n90Hits, float fHPD, float dRJetElectron, float dRJetMuon);
@@ -428,11 +568,18 @@ int main (int argc, char *argv[])
             missingEt=mets[0]->Pt();
 
             // get the 'good' objects from the selection object
-            vector<TRootJet*> selectedJets= selection.GetSelectedJets(true);
-            vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons(vertex[0],selectedJets);
-            vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons(selectedJets);
-            
-            // bookkeeping
+            vector<TRootPFJet*> selectedJets= selection.GetSelectedJets();
+            vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons();
+            vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons("Loose","PHYS14",true);
+            vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","PHYS14",true);
+            vector<TRootElectron*> selectedTightElectrons = selection.GetSelectedElectrons("Tight","PHYS14",true);
+//            vector<TRootElectron*> selectedMediumElectronsMVA = selection.GetSelectedElectrons("Medium","PHYS14",false);
+//            vector<TRootElectron*> selectedTightElectronsMVA = selection.GetSelectedElectrons("Tight","PHYS14",false);
+
+
+            vector<TRootElectron*> displacedElectrons = selection.GetSelectedDisplacedElectrons();
+            vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
+	                 // bookkeeping
             eleeffaverage[0]+=init_electrons.size()*scaleFactor;
             eleeffaverage[1]+=selectedElectrons.size()*scaleFactor;
             muoneffaverage[0]+=init_muons.size()*scaleFactor;
@@ -449,10 +596,29 @@ int main (int argc, char *argv[])
                 pZ_electron[nElectrons]=selectedElectrons[iele]->Pz();
                 E_electron[nElectrons]=selectedElectrons[iele]->E();
                 d0_electron[nElectrons]=selectedElectrons[iele]->d0();
-               
-
+                loose_electron[nElectrons]=1;
+                medium_electron[nElectrons]=0;
+                tight_electron[nElectrons]=0;
                 pfIso_electron[nElectrons]=selectedElectrons[iele]->relPfIso(3,0);
                 charge_electron[nElectrons]=selectedElectrons[iele]->charge();
+                for(int jele=0; jele<selectedMediumElectrons.size(); jele++){
+                    if (selectedElectrons[iele]->DeltaR(*(selectedMediumElectrons[jele]))<0.001)
+                        medium_electron[nElectrons]=1;
+                }
+                for(int jele=0; jele<selectedTightElectrons.size(); jele++){
+                    if (selectedElectrons[iele]->DeltaR(*(selectedTightElectrons[jele]))<0.001)
+                        tight_electron[nElectrons]=1;
+                }
+//                for(int jele=0; jele<selectedMediumElectronsMVA.size(); jele++){
+//                    if (selectedElectrons[iele]->DeltaR(*(selectedMediumElectronsMVA[jele]))<0.001)
+//                        mediumMVA_electron[nElectrons]=1;
+//                }
+//                for(int jele=0; jele<selectedTightElectronsMVA.size(); jele++){
+//                    if (selectedElectrons[iele]->DeltaR(*(selectedTightElectronsMVA[jele]))<0.001)
+//                        tightMVA_electron[nElectrons]=1;
+//                }
+//
+
                 nElectrons++;
             }
             // loop over muons
@@ -483,62 +649,68 @@ int main (int argc, char *argv[])
             }
 
             
-            if(nElectrons+nMuons>0){ // ALLWAYS fill the tree
+            if( nElectrons+nMuons>=2){ 
+                myTree->Fill();
+            }
+            else if(nElectrons>=1&&nJets>3){
+                myTree->Fill();
+            }
+            else if(nMuons >= 1 && nJets > 3){
                 myTree->Fill();
             }
             // loop over electrons
             nElectrons=0;
-            for(int iele=0; iele<init_electrons.size() && nElectrons<10; iele++){
-                pX_electron[nElectrons]=init_electrons[iele]->Px();
-                pY_electron[nElectrons]=init_electrons[iele]->Py();
+            for(int iele=0; iele<displacedElectrons.size() && nElectrons<10; iele++){
+                pX_electron[nElectrons]=displacedElectrons[iele]->Px();
+                pY_electron[nElectrons]=displacedElectrons[iele]->Py();
                 
                 if(sqrt(pow(pX_electron[nElectrons],2)+pow(pY_electron[nElectrons],2))<20)
                     continue;
 
-                pZ_electron[nElectrons]=init_electrons[iele]->Pz();
-                E_electron[nElectrons]=init_electrons[iele]->E();
-                d0_electron[nElectrons]=init_electrons[iele]->d0();
+                pZ_electron[nElectrons]=displacedElectrons[iele]->Pz();
+                E_electron[nElectrons]=displacedElectrons[iele]->E();
+                d0_electron[nElectrons]=displacedElectrons[iele]->d0();
                 
                 
-                pfIso_electron[nElectrons]=init_electrons[iele]->relPfIso(3,0);
-                charge_electron[nElectrons]=init_electrons[iele]->charge();
+                pfIso_electron[nElectrons]=displacedElectrons[iele]->relPfIso(3,0);
+                charge_electron[nElectrons]=displacedElectrons[iele]->charge();
                 nElectrons++;
             }
             // loop over muons
             nMuons=0;
-            for(int imuo=0; imuo<init_muons.size() && nMuons<10; imuo++){
-                pX_muon[nMuons]=init_muons[imuo]->Px();
-                pY_muon[nMuons]=init_muons[imuo]->Py();
+            for(int imuo=0; imuo<displacedMuons.size() && nMuons<10; imuo++){
+                pX_muon[nMuons]=displacedMuons[imuo]->Px();
+                pY_muon[nMuons]=displacedMuons[imuo]->Py();
                 if(sqrt(pow(pX_muon[nMuons],2)+pow(pY_muon[nMuons],2))<20)
                     continue;
-                pZ_muon[nMuons]=init_muons[imuo]->Pz();
-                E_muon[nMuons]=init_muons[imuo]->E();
-                d0_muon[nMuons]=init_muons[imuo]->d0();
-                pfIso_muon[nMuons]=init_muons[imuo]->relPfIso(3,0);
+                pZ_muon[nMuons]=displacedMuons[imuo]->Pz();
+                E_muon[nMuons]=displacedMuons[imuo]->E();
+                d0_muon[nMuons]=displacedMuons[imuo]->d0();
+                pfIso_muon[nMuons]=displacedMuons[imuo]->relPfIso(3,0);
                 
                 
-                charge_muon[nMuons]=init_muons[imuo]->charge();
+                charge_muon[nMuons]=displacedMuons[imuo]->charge();
                 nMuons++;
             }
             // loop over jets
             nJets=0;
-            for(int ijet=0; ijet<init_jets_corrected.size() && nJets<20; ijet++){
-                pX_jet[nJets]=init_jets_corrected[ijet]->Px();
-                pY_jet[nJets]=init_jets_corrected[ijet]->Py();
+            for(int ijet=0; ijet<selectedJets.size() && nJets<20; ijet++){
+                pX_jet[nJets]=selectedJets[ijet]->Px();
+                pY_jet[nJets]=selectedJets[ijet]->Py();
                 
                 if(sqrt(pow(pX_jet[nJets],2)+pow(pY_jet[nJets],2))<20)
                     continue;
 
-                pZ_jet[nJets]=init_jets_corrected[ijet]->Pz();
-                E_jet[nJets]=init_jets_corrected[ijet]->E();
-                dx_jet[nJets]=init_jets_corrected[ijet]->vx();
-                dy_jet[nJets]=init_jets_corrected[ijet]->vy();
-                btag_jet[nJets]=init_jets_corrected[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
+                pZ_jet[nJets]=selectedJets[ijet]->Pz();
+                E_jet[nJets]=selectedJets[ijet]->E();
+                dx_jet[nJets]=selectedJets[ijet]->vx();
+                dy_jet[nJets]=selectedJets[ijet]->vy();
+                btag_jet[nJets]=selectedJets[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
                 nJets++;
             }
-//            if(nElectrons+nMuons>0){
-//                noselTree->Fill();
-//            }
+            if(nElectrons+nMuons>=2){
+                noselTree->Fill();
+            }
             
         }			//loop on events
         
