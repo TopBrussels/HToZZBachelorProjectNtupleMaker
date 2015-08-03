@@ -241,7 +241,9 @@ int main (int argc, char *argv[])
         Double_t eta_electron[10];
         Double_t E_electron[10];
         Double_t d0_electron[10];
-        Double_t dz_electron[10];
+		Double_t dz_electron[10];
+		Double_t d0bs_electron[10];
+		Double_t dzbs_electron[10];
         Double_t pfIso_electron[10];
         Int_t charge_electron[10];
         Int_t loose_electron[10];
@@ -255,7 +257,9 @@ int main (int argc, char *argv[])
         Double_t eta_muon[10];
         Double_t E_muon[10];
         Double_t d0_muon[10];
-        Double_t dz_muon[10];
+		Double_t dz_muon[10];
+		Double_t d0bs_muon[10];
+		Double_t dzbs_muon[10];
         Double_t pfIso_muon[10];
         Int_t charge_muon[10];
         Int_t disp_muon[10];
@@ -307,12 +311,6 @@ int main (int argc, char *argv[])
         myTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
         
         
-        
-        
-        
-        
-        
-        
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         myTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
         myTree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
@@ -321,10 +319,11 @@ int main (int argc, char *argv[])
         myTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
         myTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
         myTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
-        myTree->Branch("dz_electron",dz_electron,"dz_electron[nElectrons]/D");
-        myTree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
+		myTree->Branch("dz_electron",dz_electron,"dz_electron[nElectrons]/D");
+		myTree->Branch("d0bs_electron",d0bs_electron,"d0bs_electron[nElectrons]/D");
+		myTree->Branch("dzbs_electron",dzbs_electron,"dzbs_electron[nElectrons]/D");
+
         myTree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
-        myTree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
         myTree->Branch("disp_electron",disp_electron,"disp_electron[nElectrons]/I");
         
         myTree->Branch("nMuons",&nMuons, "nMuons/I");
@@ -337,9 +336,12 @@ int main (int argc, char *argv[])
         myTree->Branch("disp_muon",disp_muon,"disp_muon[nMuons]/I");
         myTree->Branch("id_muon",id_muon,"id_muon[nMuons]/I");
         myTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
-        myTree->Branch("dz_muon",dz_muon,"dz_muon[nMuons]/D");
+		myTree->Branch("dz_muon",dz_muon,"dz_muon[nMuons]/D");
+		myTree->Branch("d0bs_muon",d0bs_muon,"d0bs_muon[nMuons]/D");
+		myTree->Branch("dzbs_muon",dzbs_muon,"dzbs_muon[nMuons]/D");
 
-        
+
+		
         myTree->Branch("nJets",&nJets, "nJets/I");
         myTree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
         myTree->Branch("phi_jet",phi_jet,"phi_jet[nJets]/D");
@@ -544,69 +546,60 @@ int main (int argc, char *argv[])
             // get the 'good' objects from the selection object
             vector<TRootPFJet*> selectedJets= selection.GetSelectedJets();
             vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons();
-            vector<TRootElectron*> selectedLooseElectrons = selection.GetSelectedElectrons("Loose","PHYS14",true);
             vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","PHYS14",true);
-            vector<TRootElectron*> selectedTightElectrons = selection.GetSelectedElectrons("Tight","PHYS14",true);
+			
             vector<TRootElectron*> selectedDisplacedElectrons = selection.GetSelectedDisplacedElectrons();
-        
-            vector<TRootMuon*> selectedDisplacedMuons = selection.GetSelectedDisplacedMuons();
+			vector<TRootMuon*> selectedDisplacedMuons = selection.GetSelectedDisplacedMuons();
+			vector<TRootElectron*> selectedDisplacedElectronsLoose = selection.GetSelectedDisplacedElectrons(30,2.5,5,5);
+			vector<TRootMuon*> selectedDisplacedMuonsLoose = selection.GetSelectedDisplacedMuons(30,2.5,5,5,0.5);
 
-            
+			
             // loop over electrons
             nElectrons=0;
-            for(int iele=0; iele<init_electrons.size() && nElectrons<10; iele++){
-                pT_electron[nElectrons]=init_electrons[iele]->Pt();
-                phi_electron[nElectrons]=init_electrons[iele]->Phi();
-                eta_electron[nElectrons]=init_electrons[iele]->Eta();
-                E_electron[nElectrons]=init_electrons[iele]->E();
-                d0_electron[nElectrons]=init_electrons[iele]->d0();
-                dz_electron[nElectrons]=init_electrons[iele]->dz();
-                loose_electron[nElectrons]=0;
-                medium_electron[nElectrons]=0;
+            for(int iele=0; iele<selectedDisplacedElectronsLoose.size() && nElectrons<10; iele++){
+                pT_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->Pt();
+                phi_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->Phi();
+                eta_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->Eta();
+                E_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->E();
+                d0_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->d0();
+				dz_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->dz();
+				d0bs_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->d0BeamSpot();
+				dzbs_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->dzBeamSpot();
+				medium_electron[nElectrons]=0;
                 disp_electron[nElectrons]=0;
-                tight_electron[nElectrons]=0;
-                pfIso_electron[nElectrons]=init_electrons[iele]->relPfIso(3,0);
-                charge_electron[nElectrons]=init_electrons[iele]->charge();
-                
-                for(int jele=0; jele<selectedLooseElectrons.size(); jele++){
-                    if (init_electrons[iele]->DeltaR(*(selectedLooseElectrons[jele]))<0.001)
-                        medium_electron[nElectrons]=1;
-                }
-                for(int jele=0; jele<selectedDisplacedElectrons.size(); jele++){
-                    if (init_electrons[iele]->DeltaR(*(selectedDisplacedElectrons[jele]))<0.001)
+                pfIso_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->relPfIso(3,0);
+                charge_electron[nElectrons]=selectedDisplacedElectronsLoose[iele]->charge();
+				for(int jele=0; jele<selectedDisplacedElectrons.size(); jele++){
+                    if (selectedDisplacedElectronsLoose[iele]->DeltaR(*(selectedDisplacedElectrons[jele]))<0.001)
                         disp_electron[nElectrons]=1;
                 }
                 for(int jele=0; jele<selectedMediumElectrons.size(); jele++){
-                    if (init_electrons[iele]->DeltaR(*(selectedMediumElectrons[jele]))<0.001)
+                    if (selectedDisplacedElectronsLoose[iele]->DeltaR(*(selectedMediumElectrons[jele]))<0.001)
                         medium_electron[nElectrons]=1;
                 }
-                for(int jele=0; jele<selectedTightElectrons.size(); jele++){
-                    if (init_electrons[iele]->DeltaR(*(selectedTightElectrons[jele]))<0.001)
-                        tight_electron[nElectrons]=1;
-                }
-                
                 nElectrons++;
             }
             // loop over muons
             nMuons=0;
-            for(int imuo=0; imuo<init_muons.size() && nMuons<10; imuo++){
-                pT_muon[nMuons]=init_muons[imuo]->Pt();
-                phi_muon[nMuons]=init_muons[imuo]->Phi();
-                eta_muon[nMuons]=init_muons[imuo]->Eta();
-                E_muon[nMuons]=init_muons[imuo]->E();
-                d0_muon[nMuons]=init_muons[imuo]->d0();
-                dz_muon[nMuons]=init_muons[imuo]->dz();
-                pfIso_muon[nMuons]=init_muons[imuo]->relPfIso(3,0);
-                
-                charge_muon[nMuons]=init_muons[imuo]->charge();
+            for(int imuo=0; imuo<selectedDisplacedMuonsLoose.size() && nMuons<10; imuo++){
+                pT_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->Pt();
+                phi_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->Phi();
+                eta_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->Eta();
+                E_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->E();
+                d0_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->d0();
+				dz_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->dz();
+				d0bs_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->d0BeamSpot();
+				dzbs_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->dzBeamSpot();
+                pfIso_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->relPfIso(4,0);
+                charge_muon[nMuons]=selectedDisplacedMuonsLoose[imuo]->charge();
                 id_muon[nMuons]=0;
                 disp_muon[nMuons]=0;
                 for(int jmuo=0; jmuo<selectedDisplacedMuons.size(); jmuo++){
-                    if (init_muons[imuo]->DeltaR(*(selectedDisplacedMuons[jmuo]))<0.001)
+                    if (selectedDisplacedMuonsLoose[imuo]->DeltaR(*(selectedDisplacedMuons[jmuo]))<0.001)
                         disp_muon[nMuons]=1;
                 }
                 for(int jmuo=0; jmuo<selectedMuons.size(); jmuo++){
-                    if (init_muons[imuo]->DeltaR(*(selectedMuons[jmuo]))<0.001)
+                    if (selectedDisplacedMuonsLoose[imuo]->DeltaR(*(selectedMuons[jmuo]))<0.001)
                         id_muon[nMuons]=1;
                 }
 
@@ -629,6 +622,10 @@ int main (int argc, char *argv[])
             if( nElectrons+nMuons>=2){
                 myTree->Fill();
             }
+			else{
+
+			}
+			
         }			//loop on events
         
         
