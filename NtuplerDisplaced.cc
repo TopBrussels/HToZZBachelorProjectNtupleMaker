@@ -180,21 +180,7 @@ int main (int argc, char *argv[])
     
     std::map<std::string,std::pair<int,bool> > triggermap;
     // book all these in the trigger map so it can be used later:
-    for(UInt_t itrig=0; itrig<mumutriggers.size(); itrig++){
-        triggermap[mumutriggers[itrig]]=std::pair<int,bool>(-999,false);
-    }
-    for(UInt_t itrig=0; itrig<mujetstriggers.size(); itrig++){
-        triggermap[mujetstriggers[itrig]]=std::pair<int,bool>(-999,false);
-    }
-    for(UInt_t itrig=0; itrig<emutriggers.size(); itrig++){
-        triggermap[emutriggers[itrig]]=std::pair<int,bool>(-999,false);
-    }
-    for(UInt_t itrig=0; itrig<eetriggers.size(); itrig++){
-        triggermap[eetriggers[itrig]]=std::pair<int,bool>(-999,false);
-    }
-    for(UInt_t itrig=0; itrig<ejetstriggers.size(); itrig++){
-        triggermap[ejetstriggers[itrig]]=std::pair<int,bool>(-999,false);
-    }
+	
     for(UInt_t itrig=0; itrig<displtriggers.size(); itrig++){
         triggermap[displtriggers[itrig]]=std::pair<int,bool>(-999,false);
     }
@@ -202,7 +188,6 @@ int main (int argc, char *argv[])
     for(std::map<std::string,std::pair<int,bool> >::iterator trigiter = triggermap.begin(); trigiter != triggermap.end(); trigiter++){
         std::pair<int,bool> bla = trigiter->second;
         std::string bla2 = trigiter->first;
-        
     }
     
     
@@ -226,7 +211,7 @@ int main (int argc, char *argv[])
         //         make root tree file name
         string roottreename = datasets[d]->Name();
         roottreename+="_displacedtree.root";
-        //        cout << "creating tree in file " << roottreename << endl;
+		cout << "!!! creating tree in file " << roottreename << " from dataset name: " << roottreename << endl;
         
         // create the output file that is used for further analysis. This file can contain histograms and/or trees (in this case only a tree)
         TFile *fileout = new TFile (roottreename.c_str(), "RECREATE");
@@ -365,14 +350,14 @@ int main (int argc, char *argv[])
         /// Initialize Jet energy correction factors   ///
         //////////////////////////////////////////////////
         
-        vector<JetCorrectorParameters> vCorrParam;
-        
-        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("../TopTreeAnalysisBase/Calibrations/JECFiles/Fall12_V6_DATA_UncertaintySources_AK5PFchs.txt", "Total")));
-        
-        // true means redo also the L1 corrections (see CMS documentation to learn what this means)
-        JetTools *jetTools = new JetTools(vCorrParam, jecUnc, true);
-        
-        
+//        vector<JetCorrectorParameters> vCorrParam;
+//        
+//        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("../TopTreeAnalysisBase/Calibrations/JECFiles/Fall12_V6_DATA_UncertaintySources_AK5PFchs.txt", "Total")));
+//        
+//        // true means redo also the L1 corrections (see CMS documentation to learn what this means)
+//        JetTools *jetTools = new JetTools(vCorrParam, jecUnc, true);
+		
+
         ////////////////////////////////////
         //	Loop on events
         ////////////////////////////////////
@@ -434,7 +419,7 @@ int main (int argc, char *argv[])
             
             for(std::map<std::string,std::pair<int,bool> >::iterator iter = triggermap.begin(); iter != triggermap.end(); iter++){
                 if(redotrigmap){
-                    Int_t loc= treeLoader.iTrigger(iter->first, currentRun);
+		  Int_t loc= treeLoader.iTrigger(iter->first, currentRun,iFile);
                     iter->second.first=loc;
                 }
                 // and check if it fired:
@@ -445,32 +430,7 @@ int main (int argc, char *argv[])
             }
             
             // now check if the appropriate triggers fired for each analysis:
-            trig_eplusjets=0;
-            for(UInt_t itrig=0; itrig<ejetstriggers.size() && trig_eplusjets==0; itrig++){
-                if(triggermap[ejetstriggers[itrig]].second)
-                    trig_eplusjets=1;
-            }
-            trig_muplusjets=0;
-            for(UInt_t itrig=0; itrig<mujetstriggers.size() && trig_muplusjets==0; itrig++){
-                if(triggermap[mujetstriggers[itrig]].second)
-                    trig_muplusjets=1;
-            }
-            trig_dilepton_ee=0;
-            for(UInt_t itrig=0; itrig<eetriggers.size() && trig_dilepton_ee==0; itrig++){
-                if(triggermap[eetriggers[itrig]].second)
-                    trig_dilepton_ee=1;
-            }
-            trig_dilepton_emu=0;
-            for(UInt_t itrig=0; itrig<emutriggers.size() && trig_dilepton_emu==0; itrig++){
-                if(triggermap[emutriggers[itrig]].second)
-                    trig_dilepton_emu=1;
-            }
-            trig_dilepton_mumu=0;
-            for(UInt_t itrig=0; itrig<mumutriggers.size() && trig_dilepton_mumu==0; itrig++){
-                if(triggermap[mumutriggers[itrig]].second)
-                    trig_dilepton_mumu=1;
-            }
-            trig_displaced=0;
+			trig_displaced=0;
             for(UInt_t itrig=0; itrig<displtriggers.size() && trig_displaced==0; itrig++){
                 if(triggermap[displtriggers[itrig]].second)
                     trig_displaced=1;
@@ -545,13 +505,10 @@ int main (int argc, char *argv[])
             
             // get the 'good' objects from the selection object
             vector<TRootPFJet*> selectedJets= selection.GetSelectedJets();
-            vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons();
-            vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","PHYS14",true);
-			
-            vector<TRootElectron*> selectedDisplacedElectrons = selection.GetSelectedDisplacedElectrons();
+			vector<TRootElectron*> selectedDisplacedElectrons = selection.GetSelectedDisplacedElectrons();
 			vector<TRootMuon*> selectedDisplacedMuons = selection.GetSelectedDisplacedMuons();
-			vector<TRootElectron*> selectedDisplacedElectronsLoose = selection.GetSelectedDisplacedElectrons(30,2.5,5,5);
-			vector<TRootMuon*> selectedDisplacedMuonsLoose = selection.GetSelectedDisplacedMuons(30,2.5,5,5,0.5);
+			vector<TRootElectron*> selectedDisplacedElectronsLoose = selection.GetSelectedDisplacedElectrons(15,2.5,0,0);
+			vector<TRootMuon*> selectedDisplacedMuonsLoose = selection.GetSelectedDisplacedMuons(15,2.5,0,0,0.5);
 
 			
             // loop over electrons
@@ -572,10 +529,6 @@ int main (int argc, char *argv[])
 				for(int jele=0; jele<selectedDisplacedElectrons.size(); jele++){
                     if (selectedDisplacedElectronsLoose[iele]->DeltaR(*(selectedDisplacedElectrons[jele]))<0.001)
                         disp_electron[nElectrons]=1;
-                }
-                for(int jele=0; jele<selectedMediumElectrons.size(); jele++){
-                    if (selectedDisplacedElectronsLoose[iele]->DeltaR(*(selectedMediumElectrons[jele]))<0.001)
-                        medium_electron[nElectrons]=1;
                 }
                 nElectrons++;
             }
@@ -598,11 +551,6 @@ int main (int argc, char *argv[])
                     if (selectedDisplacedMuonsLoose[imuo]->DeltaR(*(selectedDisplacedMuons[jmuo]))<0.001)
                         disp_muon[nMuons]=1;
                 }
-                for(int jmuo=0; jmuo<selectedMuons.size(); jmuo++){
-                    if (selectedDisplacedMuonsLoose[imuo]->DeltaR(*(selectedMuons[jmuo]))<0.001)
-                        id_muon[nMuons]=1;
-                }
-
                 nMuons++;
             }
             // loop over jets
@@ -617,14 +565,9 @@ int main (int argc, char *argv[])
                 btag_jet[nJets]=selectedJets[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
                 nJets++;
             }
-            
-            
             if( nElectrons+nMuons>=2){
                 myTree->Fill();
             }
-			else{
-
-			}
 			
         }			//loop on events
         
@@ -633,8 +576,8 @@ int main (int argc, char *argv[])
         // CLEANING //
         //////////////
         
-        if (jecUnc) delete jecUnc;
-        if (jetTools) delete jetTools;
+//        if (jecUnc) delete jecUnc;
+//        if (jetTools) delete jetTools;
         
         myTree->Write();
         fileout->Write();
