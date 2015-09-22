@@ -469,7 +469,7 @@ int main (int argc, char *argv[])
             
             for(std::map<std::string,std::pair<int,bool> >::iterator iter = triggermap.begin(); iter != triggermap.end(); iter++){
                 if(redotrigmap){
-                    Int_t loc= treeLoader.iTrigger(iter->first, currentRun);
+		  Int_t loc= treeLoader.iTrigger(iter->first, currentRun,iFile);
                     iter->second.first=loc;
                 }
                 // and check if it fired:
