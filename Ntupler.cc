@@ -287,6 +287,7 @@ int main (int argc, char *argv[])
         bookkeeping->Branch("nvtx",&nvtx,"nvtx/I");
         bookkeeping->Branch("npu",&npu,"npu/I");
         
+
         // define the output tree
         TTree* myTree = new TTree("tree","tree");
         myTree->Branch("isdata",&isdata,"isdata/I");
@@ -301,12 +302,6 @@ int main (int argc, char *argv[])
         myTree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
         myTree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
         myTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
-        
-        
-        
-        
-        
-        
         
         
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
@@ -345,6 +340,59 @@ int main (int argc, char *argv[])
         
         myTree->Branch("missingEt",&missingEt,"missingEt/D");
         myTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
+
+        // define the output tree
+        TTree* dilepTree = new TTree("dileptree","dileptree");
+        dilepTree->Branch("isdata",&isdata,"isdata/I");
+        dilepTree->Branch("run_num",&run_num,"run_num/I");
+        dilepTree->Branch("evt_num",&evt_num,"evt_num/I");
+        dilepTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        dilepTree->Branch("nvtx",&nvtx,"nvtx/I");
+        dilepTree->Branch("npu",&npu,"npu/I");
+        dilepTree->Branch("trig_dilepton_emu",&trig_dilepton_emu,"trig_dilepton_emu/I");
+        dilepTree->Branch("trig_dilepton_ee",&trig_dilepton_ee,"trig_dilepton_ee/I");
+        dilepTree->Branch("trig_dilepton_mumu",&trig_dilepton_mumu,"trig_dilepton_mumu/I");
+        dilepTree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
+        dilepTree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
+        dilepTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
+        
+        
+        dilepTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
+        dilepTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        dilepTree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
+        dilepTree->Branch("eta_electron",eta_electron,"eta_electron[nElectrons]/D");
+        dilepTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
+        dilepTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
+        dilepTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
+        dilepTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        dilepTree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
+        dilepTree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
+        dilepTree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
+        //        dilepTree->Branch("mediumMVA_electron",mediumMVA_electron,"mediumMVA_electron[nElectrons]/I");
+        //        dilepTree->Branch("tightMVA_electron",tightMVA_electron,"tightMVA_electron[nElectrons]/I");
+        //
+        
+        
+        dilepTree->Branch("nMuons",&nMuons, "nMuons/I");
+        dilepTree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
+        dilepTree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
+        dilepTree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
+        dilepTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
+        dilepTree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
+        dilepTree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
+        dilepTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
+        
+        dilepTree->Branch("nJets",&nJets, "nJets/I");
+        dilepTree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
+        dilepTree->Branch("phi_jet",phi_jet,"phi_jet[nJets]/D");
+        dilepTree->Branch("eta_jet",eta_jet,"eta_jet[nJets]/D");
+        dilepTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
+        dilepTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
+        dilepTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
+        dilepTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        
+        dilepTree->Branch("missingEt",&missingEt,"missingEt/D");
+        dilepTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
                 
         
         //        myTree->Print();
@@ -620,12 +668,12 @@ int main (int argc, char *argv[])
             
             
             if( nElectrons+nMuons>=2){
+                dilepTree->Fill();
+            }
+            if(nElectrons>=1&&nJets>4){
                 myTree->Fill();
             }
-            else if(nElectrons>=1&&nJets>3){
-                myTree->Fill();
-            }
-            else if(nMuons >= 1 && nJets > 3){
+            else if(nMuons >= 1 && nJets > 4){
                 myTree->Fill();
             }
         }			//loop on events
