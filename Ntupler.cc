@@ -208,7 +208,7 @@ int main (int argc, char *argv[])
     
     
     LumiReWeighting LumiWeights;
-    LumiWeights = LumiReWeighting("../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root", "../TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run254231-258750Cert/nominal.root", "pileup", "pileup");
+    LumiWeights = LumiReWeighting("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root", "/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run254231-258750Cert/nominal.root", "pileup", "pileup");
     
     for (unsigned int d = 0; d < datasets.size (); d++) {
         
@@ -362,7 +362,7 @@ int main (int argc, char *argv[])
         
         vector<JetCorrectorParameters> vCorrParam;
         
-        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("../TopTreeAnalysisBase/Calibrations/JECFiles/Fall12_V6_DATA_UncertaintySources_AK5PFchs.txt", "Total")));
+        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/JECFiles/Summer15_25nsV2_DATA_UncertaintySources_AK4PFchs.txt", "Total")));
         
         // true means redo also the L1 corrections (see CMS documentation to learn what this means)
         JetTools *jetTools = new JetTools(vCorrParam, jecUnc, true);
