@@ -8,7 +8,7 @@ import array
 tdrstyle.setTDRStyle()
 
 CMS_lumi.lumi_13TeV="L #approx 553 pb^{-1}"
-luminosity= 533
+luminosity= 0.533
 CMS_lumi.writeExtraText = 1
 CMS_lumi.extraText = "Super-Preliminary Work in Progress"
 
@@ -39,14 +39,14 @@ canvas.SetBottomMargin( B/H )
 canvas.SetTickx(0)
 canvas.SetTicky(0)
 
-#file=rt.TFile("output_electrons.root","read")
-file=rt.TFile("output_muons.root","read")
+file=rt.TFile("output_electron.root","read")
+#file=rt.TFile("output_muons.root","read")
 #file=rt.TFile("output_displaced.root","read")
 file.ls()
 #file.ls()
 #listofnames=["h_eled0_","h_mud0_"]
 #listofnames=["h_elenjets_","h_elezpeak_","h_elenvtx_","h_elept_","h_eleeta_","h_eleIso_"]
-listofnames=["h_elenvtx_"]
+listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_"]
 
 for histname in listofnames :
     print "now making plots: ",histname
@@ -62,6 +62,7 @@ for histname in listofnames :
     canv.SetTickx(0)
     canv.SetTicky(0)
     hist_tt=file.Get(histname+"ttbar")
+    hist_tt.Scale(luminosity)
     #    hist_tt.DrawClone();
     hist_z=file.Get(histname+"Zjets")
     hist_z.Scale(luminosity)
@@ -90,7 +91,7 @@ for histname in listofnames :
     hist_data.Draw("ex0")
     
     stack.Draw("histsame")
-    leg = rt.TLegend(0.7,0.65,0.95,0.95)
+    leg = rt.TLegend(0.7,0.65,0.95,0.90)
     leg.SetFillStyle(0)
     titletext="data :"+"{0:.2f}".format(hist_data.GetSum())
     leg.AddEntry(hist_data,titletext,"p")

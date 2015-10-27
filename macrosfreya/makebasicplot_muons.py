@@ -11,7 +11,7 @@ import ROOT
 # very loud but useful to know what variables are stored in a tree... it prints them all
 #ch.Print()
 
-lumi=15.167
+lumi=1000.0
 # book some histograms
 outfile = ROOT.TFile("output_muons.root","recreate")
 outfile.cd()
@@ -22,6 +22,7 @@ b_muIso = ROOT.TH1F("b_muIso",":muon pfIso:muons",100,0,1)
 b_njets = ROOT.TH1F("b_njets","jet mult:jet mult:events",10,0,10)
 b_jetpt = ROOT.TH1F("b_jetpt","jet p_{T}",100,0,500)
 b_zpeak = ROOT.TH1F("b_zpeak","m(mumu)",100,0,200)
+b_nvtx = ROOT.TH1F("b_nvtx","npv",50,0,50)
 
 
 stack_mupt = ROOT.THStack("stack_mupt","muon p_{T}")
@@ -39,16 +40,23 @@ stack_mujetpt = ROOT.THStack("stack_mujetpt","jet p_{T}")
 stack_muzpeak = ROOT.THStack("stack_zpeak","m(mumu)")
 #stack_zpeak.SetDirectory(outfile)
 
-names=["Wjets","Zjets","ttbar","data"]
-colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kBlack]
-xsecs=[20508.9,2008.4,800,-1]
-filenames=["../../../datafiles/CMSSW_74X_v3-ntuples/*WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-50ns*.root",
-        "../../../datafiles/CMSSW_74X_v3-ntuples/*DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8-50n*.root",
-        "../../../datafiles/CMSSW_74X_v3-ntuples/*TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8-50ns*.root",
-        "../../../datafiles/CMSSW_74X_v3-ntuples/*SingleMuon*.root"]
+names=["Wjets","Zjets","ttbar","tw","atw","data"]
+colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kPink,ROOT.kPink,ROOT.kBlack]
+xsecs=[20508.9*3,2008.4*3,831.76,35.85,35.85,-1]
+filenames=["../WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8_Ntupler/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8_*.root",
+           "../DYJetsToLL_M-50_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_Ntupler/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_*.root",
+           "../TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_Ntupler/TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_*.root",
+           "../ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_Ntupler/ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_*.root",
+           "../ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_Ntupler/ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_*.root",
+           "../SingleMuon*.root"]
+
 
 print xsecs
 print filenames
+
+
+startevcounts=[0,0,0,0,0,0,0,0]
+ntupleevcounts=[0,0,0,0,0,0,0,0]
 
 # using lorentz vectors as easy to calculate angles, pseudorapidity, etc
 lvmu=ROOT.TLorentzVector()
@@ -65,6 +73,10 @@ runlist=[]
 for isam in range(len(xsecs)) :
     ch = ROOT.TChain("tree","tree")
     ch.Add(filenames[isam])
+    
+    bookkeeping = ROOT.TChain("startevents","startevents")
+    bookkeeping.Add(filenames[isam])
+    
     outfile.cd()
     h_mupt=b_mupt.Clone("h_mupt_"+names[isam])
     h_mueta=b_mueta.Clone("h_mueta_"+names[isam])
@@ -77,12 +89,21 @@ for isam in range(len(xsecs)) :
 
     
     ii=0
+    
+    
     nevents=ch.GetEntries()
+    if nevents==0 :
+        continue
+    neventsstart = bookkeeping.GetEntries()
+    startevcounts[isam]=neventsstart
+    ntupleevcounts[isam]=nevents
     workxsec=xsecs[isam]
-    mcweight=workxsec*lumi
-    mcweight/=nevents
+    mcweight=float(workxsec*lumi)
+    mcweight/=float(neventsstart)
     if workxsec == -1:
         mcweight=1  # because then it's data!
+    
+    
     h_mupt.SetLineColor(colors[isam])
     h_mueta.SetLineColor(colors[isam])
     h_mud0.SetLineColor(colors[isam])
@@ -100,8 +121,7 @@ for isam in range(len(xsecs)) :
         h_muzpeak.SetFillColor(colors[isam])
 
 
-
-    print "now running on sample ",filenames[isam]," with xsec:",xsecs[isam]," and lumi ",lumi, " and events: ", nevents," giving an MC weight of",mcweight
+    print "now running on sample ",filenames[isam]," with xsec:",xsecs[isam]," and lumi ",lumi, " and events: ", nevents," (started with ",neventsstart,"),  giving an MC weight of",mcweight
     for iev in ch:
         if ii % 10000 ==0 :
             print ii, "/", nevents
@@ -119,9 +139,9 @@ for isam in range(len(xsecs)) :
 # loop over muons - fill in lorentz vector and fill some histograms
         for imu in range(0,iev.nMuons) :
             
-            lvmu.SetPxPyPzE(iev.pX_muon[imu],iev.pY_muon[imu],iev.pZ_muon[imu],iev.E_muon[imu])
+            lvmu.SetPtEtaPhiE(iev.pT_muon[imu],iev.eta_muon[imu],iev.phi_muon[imu],iev.E_muon[imu])
             if imu > 0 :
-                lve.SetPxPyPzE(iev.pX_muon[imu-1],iev.pY_muon[imu-1],iev.pZ_muon[imu-1],iev.E_muon[imu-1])
+                lve.SetPtEtaPhiE(iev.pT_muon[imu-1],iev.eta_muon[imu-1],iev.phi_muon[imu-1],iev.E_muon[imu-1])
                 #                print "muon 0: ",lve.Pt()," muon 1:", lvmu.Pt()
                 h_muzpeak.Fill((lve+lvmu).M(),mcweight)
             h_mupt.Fill(lvmu.Pt(),mcweight)
@@ -135,7 +155,7 @@ for isam in range(len(xsecs)) :
             h_munjets.Fill(iev.nJets,mcweight)
             ntags=0;
             for ijet in range(0, iev.nJets) :
-                lvjet.SetPxPyPzE(iev.pX_jet[ijet],iev.pY_jet[ijet],iev.pZ_jet[ijet],iev.E_jet[ijet])
+                lvjet.SetPtEtaPhiE(iev.pT_jet[ijet],iev.eta_jet[ijet],iev.phi_jet[ijet],iev.E_jet[ijet])
                 h_mujetpt.Fill(lvjet.Pt(),mcweight)
 
                              

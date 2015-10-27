@@ -11,7 +11,7 @@ import ROOT
 # very loud but useful to know what variables are stored in a tree... it prints them all
 #ch.Print()
 
-lumi=1.0
+lumi=1000.0
 # book some histograms
 outfile = ROOT.TFile("output_electron.root","recreate")
 outfile.cd()
@@ -56,7 +56,7 @@ filenames=["../WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8_Ntupler/WJetsT
            "../TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_Ntupler/TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia8_*.root",
            "../ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_Ntupler/ST_tW_top_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_*.root",
            "../ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_Ntupler/ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-pythia8_TuneCUETP8M1_*.root",
-           "../SingleElectron-Run2015D-PromptReco-v3_Ntupler/SingleElectron-Run2015D-PromptReco-v3_*.root"]
+           "SingleElectron*.root"]
 
 startevcounts=[0,0,0,0,0,0,0,0]
 ntupleevcounts=[0,0,0,0,0,0,0,0]
@@ -148,16 +148,21 @@ for isam in range(len(xsecs)) :
         if abs(iev.mc_baseweight - 1.) > 0.00001 :
 			if ii < 100 :
 				print "MC weights: PU",iev.pu_weight," and generator: ",iev.mc_baseweight
-        totalweight=mcweight*iev.pu_weight*iev.mc_baseweight
-        totalweightnopu=mcweight*iev.mc_baseweight
+        totalweight=mcweight*iev.pu_weight
+        totalweightnopu=mcweight
+        ngoodelectrons = 0
         if workxsec == -1 :
             #reset weight for data:
             totalweight=1 
 # loop over electrons - fill in lorentz vector and fill some histograms
         for iele in range(0,iev.nElectrons) :
-
+            if iev.tight_electron[iele] == 0 :
+                continue
             lvmu.SetPtEtaPhiE(iev.pT_electron[iele],iev.eta_electron[iele],iev.phi_electron[iele],iev.E_electron[iele])
+            ngoodelectrons+=1
             if iele > 0 :
+                if iev.tight_electron[iele-1] ==0 :
+                    continue
                 lve.SetPtEtaPhiE(iev.pT_electron[iele-1],iev.eta_electron[iele-1],iev.phi_electron[iele-1],iev.E_electron[iele-1])
 				
                 h_elezpeak.Fill((lve+lvmu).M(),totalweight)
@@ -168,7 +173,7 @@ for isam in range(len(xsecs)) :
 
 #        print "mc weight = ",totalweight    
 
-        if iev.nElectrons == 1 :
+        if ngoodelectrons == 1:
             h_elenjets.Fill(iev.nJets,totalweight)
             h_elenvtx.Fill(iev.nvtx,totalweight)
             h_elenopunvtx.Fill(iev.nvtx,totalweightnopu)
