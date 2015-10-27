@@ -505,10 +505,10 @@ int main (int argc, char *argv[])
             
             // get the 'good' objects from the selection object
             vector<TRootPFJet*> selectedJets= selection.GetSelectedJets();
-			vector<TRootElectron*> selectedDisplacedElectrons = selection.GetSelectedDisplacedElectrons();
+			vector<TRootElectron*> selectedDisplacedElectrons = selection.GetSelectedDisplacedElectrons(15,2.5);
 			vector<TRootMuon*> selectedDisplacedMuons = selection.GetSelectedDisplacedMuons();
-			vector<TRootElectron*> selectedDisplacedElectronsLoose = selection.GetSelectedDisplacedElectrons(15,2.5,0,0);
-			vector<TRootMuon*> selectedDisplacedMuonsLoose = selection.GetSelectedDisplacedMuons(15,2.5,0,0,0.5);
+			vector<TRootElectron*> selectedDisplacedElectronsLoose = selection.GetSelectedDisplacedElectrons(15,2.5);
+			vector<TRootMuon*> selectedDisplacedMuonsLoose = selection.GetSelectedDisplacedMuons();
 
 			
             // loop over electrons
