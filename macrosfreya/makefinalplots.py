@@ -7,10 +7,12 @@ import array
 #set the tdr style
 tdrstyle.setTDRStyle()
 
-CMS_lumi.lumi_13TeV="L #approx 553 pb^{-1}"
-luminosity= 0.533
+luminosity= 0.533+0.711
+
+CMS_lumi.lumi_13TeV="L #approx "+str(luminosity)+" fb^{-1}"
+print "luminosity is: "
 CMS_lumi.writeExtraText = 1
-CMS_lumi.extraText = "Super-Preliminary Work in Progress"
+CMS_lumi.extraText = "Work in Progress, e+4jets+2CSVM"
 
 
 iPos = 10
@@ -46,7 +48,7 @@ file.ls()
 #file.ls()
 #listofnames=["h_eled0_","h_mud0_"]
 #listofnames=["h_elenjets_","h_elezpeak_","h_elenvtx_","h_elept_","h_eleeta_","h_eleIso_"]
-listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_"]
+listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_","h_elenjets_","h_elept_","h_eleIso_","h_eled0zoom_"]
 
 for histname in listofnames :
     print "now making plots: ",histname
@@ -77,7 +79,7 @@ for histname in listofnames :
     hist_tw.Scale(luminosity)
     #    hist_w.DrawClone("same")
     hist_data=file.Get(histname+"data")
-    print "number of data events in histogram ",hist_data.GetName()," is ",hist_data.GetIntegral()
+    print "number of data events in histogram ",hist_data.GetName()," is ",hist_data.GetSum()
     stack = rt.THStack("stack"+histname,"")
     stack.Add(hist_w,"f")
     stack.Add(hist_z,"f")
@@ -106,7 +108,7 @@ for histname in listofnames :
     hist_data.Draw("esamex0")
     leg.Draw("same")
     hist_data.SetMinimum(0.01)
-    hist_data.SetMaximum(5.*hist_data.GetMaximum())
+    hist_data.SetMaximum(20*hist_data.GetMaximum())
     rt.gPad.SetLogy()
     canv.cd()
     CMS_lumi.CMS_lumi(canv, 4, iPos)
