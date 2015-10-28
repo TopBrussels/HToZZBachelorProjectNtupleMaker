@@ -1,5 +1,6 @@
 import os, sys
 import ROOT
+import time
 ##############
 # example pyroot loop for histogram making on output trees of Ntupler
 # January 2015 by freya.blekman@cern.ch
@@ -10,10 +11,12 @@ import ROOT
 
 # very loud but useful to know what variables are stored in a tree... it prints them all
 #ch.Print()
-
 lumi=1000.0
+
+datestring=time.strftime("%Y-%m-%d")
+print datestring
 # book some histograms
-outfile = ROOT.TFile("output_electron.root","recreate")
+outfile = ROOT.TFile("output_electron_"+datestring+".root","recreate")
 outfile.cd()
 b_elept = ROOT.TH1F("b_elept","electron p_{T}",100,0,500)
 b_elept.SetXTitle("electron p_{T} [GeV]")
@@ -30,38 +33,36 @@ b_elenjets.SetXTitle("jet multiplicity")
 b_elejetpt = ROOT.TH1F("b_elejetpt","jet p_{T}",100,0,500)
 b_elejetpt.SetXTitle("jet p_{T} [GeV]")
 b_elezpeak = ROOT.TH1F("b_elezpeak","m(eleele)",100,0,200)
-b_elezpeak.SetXTitle("M(ee) [GeV/]")
+b_elezpeak.SetXTitle("M(ee) [GeV]")
 b_elenvtx = ROOT.TH1F("b_elenvtx","PV multiplicity",40,0,40)
 b_elenvtx.SetXTitle("PV multiplicity")
+b_eleht = ROOT.TH1F("b_eleht","",100,0,1000)
+b_eleht.SetXTitle("H_{T} [GeV]")
+b_elehtbinned=ROOT.TH1F("b_elehtbinned","",60,0,6000)
+b_elehtbinned.SetXTitle("H_{T} [GeV]")
 
-stack_elept = ROOT.THStack("stack_elept","electron p_{T}")
-#stack_elept.SetDirectory(outfile)
-stack_eleeta = ROOT.THStack("stack_eleeta","electron #eta")
-#stack_eleeta.SetDirectory(outfile)
-stack_eleIso = ROOT.THStack("stack_eleIso","electron pfIso")
-#stack_eleIso.SetDirectory(outfile)
-stack_eled0 = ROOT.THStack("stack_eled0","electron d0")
-#stack_eled0.SetDirectory(outfile)
-stack_elenjets = ROOT.THStack("stack_elenjets","jet elelt:jet elelt:events")
-#stack_njets.SetDirectory(outfile)
-stack_elejetpt = ROOT.THStack("stack_elejetpt","jet p_{T}")
-#stack_jetpt.SetDirectory(outfile)
-stack_elezpeak = ROOT.THStack("stack_elezpeak","m(eleele)")
-#stack_zpeak.SetDirectory(outfile)
-stack_nvtx = ROOT.THStack("stack_nvtx","PV mult");
 
-names=["Wjets","Zjets","ttbar","tw","atw","data"]
-colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kPink,ROOT.kPink,ROOT.kBlack]
-xsecs=[20508.9*3,2008.4*3,831.76,35.85,35.85,-1]
+
+names=["Wjets","Zjets","ttbar","tw","atw","tttt","data"]
+colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kPink,ROOT.kPink,ROOT.kGray,ROOT.kBlack]
+xsecs=[20508.9*3,2008.4*3,831.76,35.85,35.85,0.009,-1]
 filenames=["WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8*.root",
            "DYJetsToLL_M-50_TuneCUETP8M1_13TeV-madgraphMLM-*.root",
            "TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia*.root",
            "ST_tW_top_5f_inclusiveDecays_13TeV-powheg*.root",
            "ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-*.root",
-           "SingleElectron*.root"]
+           "TTTT_TuneCUETP8M1_13TeV-amcatnlo-pythia8.root",
+           "SingleElectron-Run2015D-Prompt*.root"]
 
-startevcounts=[0,0,0,0,0,0,0,0]
-ntupleevcounts=[0,0,0,0,0,0,0,0]
+startevcounts=[0.,0.,0.,0.,0.,0.,0.,0.,0.]
+ntupleevcounts=[0.,0,0.,0.,0.,0.,0.,0.,0.,0.]
+storedevents=[0.,0.,0.,0.,0.,0.,0.,0.,0.]
+
+#print runlist
+for isam in range(len(names)) :
+    print "sample ",names[isam]," ",ntupleevcounts[isam]," ",startevcounts[isam]," ",storedevents[isam]," ",xsecs[isam]
+#print names
+#print ntupleevcounts
 
 
 # using lorentz vectors as easy to calculate angles, pseudorapidity, etc
@@ -97,6 +98,9 @@ for isam in range(len(xsecs)) :
     h_elezpeak=b_elezpeak.Clone("h_elezpeak_"+names[isam])
     h_elenvtx=b_elenvtx.Clone("h_elenvtx_"+names[isam])
     h_elenopunvtx=b_elenvtx.Clone("h_elenopunvtx_"+names[isam])
+    h_eleht=b_eleht.Clone("h_eleht_"+names[isam])
+    h_elehtbinned=b_elehtbinned.Clone("h_elehtbinned_"+names[isam])
+
     
 
     
@@ -110,6 +114,7 @@ for isam in range(len(xsecs)) :
     workxsec=xsecs[isam]
     mcweight=float(workxsec*lumi)
     mcweight/=float(neventsstart)
+    lepweight=1.
     if workxsec == -1:
         mcweight=1  # because then it's data!
     h_elept.SetLineColor(colors[isam])
@@ -122,6 +127,9 @@ for isam in range(len(xsecs)) :
     h_elezpeak.SetLineColor(colors[isam])
     h_elenvtx.SetLineColor(colors[isam])
     h_elenopunvtx.SetLineColor(colors[isam])
+    h_eleht.SetLineColor(colors[isam])
+    h_elehtbinned.SetLineColor(colors[isam])
+
     if workxsec != -1:
         h_elept.SetFillColor(colors[isam])
         h_eleeta.SetFillColor(colors[isam])
@@ -133,6 +141,10 @@ for isam in range(len(xsecs)) :
         h_elezpeak.SetFillColor(colors[isam])
         h_elenvtx.SetFillColor(colors[isam])
         h_elenopunvtx.SetFillColor(colors[isam])
+        h_eleht.SetFillColor(colors[isam])
+        h_elehtbinned.SetFillColor(colors[isam])
+
+
 
 
 
@@ -151,24 +163,27 @@ for isam in range(len(xsecs)) :
         if abs(iev.mc_baseweight - 1.) > 0.00001 :
             if ii < 100 :
                 print "MC weights: PU",iev.pu_weight," and generator: ",iev.mc_baseweight
-        totalweight=mcweight*iev.pu_weight
-        totalweightnopu=mcweight
+        totalweight=mcweight*iev.pu_weight*iev.mc_baseweight
+        totalweightnopu=mcweight*iev.mc_baseweight
         
         ngoodjets=0
+        lepweight=1
         if iev.nMuons > 0 :
             continue
         if iev.nJets < 4 :
             continue
         ntags=0
+
+        ht=0
         for ijet in range(0, iev.nJets) :
             lvjet.SetPtEtaPhiE(iev.pT_jet[ijet],iev.eta_jet[ijet],iev.phi_jet[ijet],iev.E_jet[ijet])
             h_elejetpt.Fill(lvjet.Pt(),totalweight)
+            ht+=lvjet.Pt()
             if iev.btag_jet[ijet] > 0.890 :
                 ntags+=1
 
         if ntags < 2 :
             continue
-
 
         ngoodelectrons = 0
         if workxsec == -1 :
@@ -180,37 +195,48 @@ for isam in range(len(xsecs)) :
                 continue
             lvmu.SetPtEtaPhiE(iev.pT_electron[iele],iev.eta_electron[iele],iev.phi_electron[iele],iev.E_electron[iele])
             ngoodelectrons+=1
+            lepweight*=iev.sfl_electron[iele];
             if iele > 0 :
                 if iev.tight_electron[iele-1] ==0 :
                     continue
                 lve.SetPtEtaPhiE(iev.pT_electron[iele-1],iev.eta_electron[iele-1],iev.phi_electron[iele-1],iev.E_electron[iele-1])
 				
-                h_elezpeak.Fill((lve+lvmu).M(),totalweight)
-            h_elept.Fill(lvmu.Pt(),totalweight)
-            h_eleeta.Fill(lvmu.Eta(),totalweight)
-            h_eled0.Fill(abs(iev.d0_electron[iele]),totalweight)
-            h_eled0zoom.Fill(abs(iev.d0_electron[iele]),totalweight)
-            h_eleIso.Fill(iev.pfIso_electron[iele],totalweight)
+                h_elezpeak.Fill((lve+lvmu).M(),totalweight*lepweight*iev.sfl_electron[iele-1])
+            h_elept.Fill(lvmu.Pt(),totalweight*lepweight)
+            h_eleeta.Fill(lvmu.Eta(),totalweight*lepweight)
+            h_eled0.Fill(abs(iev.d0_electron[iele]),totalweight*lepweight)
+            h_eled0zoom.Fill(abs(iev.d0_electron[iele]),totalweight*lepweight)
+            h_eleIso.Fill(iev.pfIso_electron[iele],totalweight*lepweight)
 
-#        print "mc weight = ",totalweight    
-
+#        print "mc weight = ",totalweight
         if ngoodelectrons == 1:
+            totalweight=lepweight*totalweight
+            totalweightnopu=lepweight*totalweightnopu
+
             h_elenjets.Fill(iev.nJets,totalweight)
             h_elenvtx.Fill(iev.nvtx,totalweight)
             h_elenopunvtx.Fill(iev.nvtx,totalweightnopu)
-         
-    
+            h_eleht.Fill(ht,totalweight)
+            htfixed=ht
+            if htfixed>1000 :
+                htfixed=1000.
+            if iev.nJets > 7:
+                htfixed+=1000.
+            if iev.nJets > 8:
+                htfixed+=1000.
+            if ntags > 3 :
+                htfixed+=3000.
+            h_elehtbinned.Fill(htfixed,totalweight)
+    storedevents[isam]=h_elenjets.GetSum()
     outfile.Write()
-    print "ran over ", ii, " events"
+    print "ran over ", ii, " events, selected ",storedevents[isam]
 # end of all loops
-print runlist
 
-print names
-print ntupleevcounts
-print startevcounts
-print xsecs
-#
-## create canvas
-t3=ROOT.TCanvas()
-stack_elenjets.Draw("hist")
-h_elenjets.Draw("pe0same")
+#print runlist
+for isam in range(len(names)) :
+    print "sample ",names[isam]," ",ntupleevcounts[isam]," ",startevcounts[isam]," ",storedevents[isam]," ",xsecs[isam]
+#print names
+#print ntupleevcounts
+#print startevcounts
+#print storedevents
+#print xsecs

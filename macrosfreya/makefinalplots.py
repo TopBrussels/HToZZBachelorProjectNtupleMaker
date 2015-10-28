@@ -2,7 +2,11 @@ import os, sys
 import ROOT as rt
 import CMS_lumi, tdrstyle
 import array
+import time
 
+
+datetime=time.strftime("%Y-%m-%d-%H-%M")
+print datetime
 
 #set the tdr style
 tdrstyle.setTDRStyle()
@@ -10,7 +14,7 @@ tdrstyle.setTDRStyle()
 luminosity= 0.533+0.711
 
 CMS_lumi.lumi_13TeV="L #approx "+str(luminosity)+" fb^{-1}"
-print "luminosity is: "
+print "luminosity is: ",luminosity
 CMS_lumi.writeExtraText = 1
 CMS_lumi.extraText = "Work in Progress, e+4jets+2CSVM"
 
@@ -41,14 +45,14 @@ canvas.SetBottomMargin( B/H )
 canvas.SetTickx(0)
 canvas.SetTicky(0)
 
-file=rt.TFile("output_electron.root","read")
+file=rt.TFile("output_electron_2015-10-28.root","read")
 #file=rt.TFile("output_muons.root","read")
 #file=rt.TFile("output_displaced.root","read")
 file.ls()
 #file.ls()
 #listofnames=["h_eled0_","h_mud0_"]
 #listofnames=["h_elenjets_","h_elezpeak_","h_elenvtx_","h_elept_","h_eleeta_","h_eleIso_"]
-listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_","h_elenjets_","h_elept_","h_eleIso_","h_eled0zoom_"]
+listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_","h_elenjets_","h_elept_","h_eleIso_","h_eled0zoom_","h_eleht_","h_elehtbinned_"]
 
 for histname in listofnames :
     print "now making plots: ",histname
@@ -63,21 +67,33 @@ for histname in listofnames :
     canv.SetBottomMargin( B/H )
     canv.SetTickx(0)
     canv.SetTicky(0)
+    print "retrieving ",histname,"ttbar"
+
     hist_tt=file.Get(histname+"ttbar")
+    print "number of entries: ",hist_tt.GetSum()
     hist_tt.Scale(luminosity)
-    #    hist_tt.DrawClone();
+    print "retrieving ",histname,"Zjets"
     hist_z=file.Get(histname+"Zjets")
+    print "number of entries: ",hist_z.GetSum()
     hist_z.Scale(luminosity)
-    #    hist_z.DrawClone("same")
+    print "retrieving ",histname,"Wjets"
     hist_w=file.Get(histname+"Wjets")
+    print "number of entries: ",hist_w.GetSum()
     hist_w.Scale(luminosity)
-    #    hist_w.DrawClone("same")
+    print "retrieving ",histname,"atw"
     hist_atw=file.Get(histname+"atw")
+    print "number of entries: ",hist_atw.GetSum()
     hist_atw.Scale(luminosity)
-    #    hist_w.DrawClone("same")
+    print "retrieving ",histname,"tw"
     hist_tw=file.Get(histname+"tw")
+    print "number of entries: ",hist_tw.GetSum()
     hist_tw.Scale(luminosity)
-    #    hist_w.DrawClone("same")
+    print "retrieving ",histname,"tttt"
+    hist_tttt=file.Get(histname+"tttt")
+    print "number of entries: ",hist_tttt.GetSum()
+    hist_tttt.Scale(luminosity*100)
+    
+    print "retrieving ",histname,"data"
     hist_data=file.Get(histname+"data")
     print "number of data events in histogram ",hist_data.GetName()," is ",hist_data.GetSum()
     stack = rt.THStack("stack"+histname,"")
@@ -91,6 +107,7 @@ for histname in listofnames :
     canv.cd()
     hist_data.SetYTitle("events")
     hist_data.Draw("ex0")
+    hist_tttt.Draw("histsame")
     
     stack.Draw("histsame")
     leg = rt.TLegend(0.7,0.65,0.95,0.90)
@@ -105,6 +122,11 @@ for histname in listofnames :
     leg.AddEntry(hist_z,titletext,"f")
     titletext="W+jets :"+"{0:.2f}".format(hist_w.GetSum())
     leg.AddEntry(hist_w,titletext,"f")
+    titletext="tttt x100 :"+"{0:.2f}".format(hist_w.GetSum())
+    leg.AddEntry(hist_tttt,titletext,"l")
+    hist_tttt.SetFillStyle(0)
+    hist_tttt.SetLineWidth(2*hist_tttt.GetLineWidth())
+    hist_tttt.Draw("histsame")
     hist_data.Draw("esamex0")
     leg.Draw("same")
     hist_data.SetMinimum(0.01)
@@ -116,6 +138,6 @@ for histname in listofnames :
     canv.RedrawAxis()
     frame = canv.GetFrame()
     frame.Draw()
-    canv.Print(histname+"stackplot.png")
-    canv.Print(histname+"stackplot.C")
+    canv.Print(histname+"stackplot"+datetime+".png")
+    canv.Print(histname+"stackplot"+datetime+".C")
 raw_input("Type Entry to end")
