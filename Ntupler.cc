@@ -44,7 +44,7 @@ using namespace TopTree;
 
 
 
-Float_t calc_weight_p2(std::vector<float> effvals,std::vector<float> sfvals,int nobj, bool withsf){
+Float_t calc_weight_p3(std::vector<float> effvals,std::vector<float> sfvals,int nobj, bool withsf){
     Float_t pdata= 0;
     if( effvals.size() < nobj ){
         return -1;
@@ -73,6 +73,55 @@ Float_t calc_weight_p2(std::vector<float> effvals,std::vector<float> sfvals,int 
                 Float_t workval3 = effvals[kk];
                 if(withsf)
                     workval3*=sfvals[kk];
+                for(int ll=0; ll < nobj; ll++){
+                    if (ll==kk)
+                        continue;
+                    if (ll==jj)
+                        continue;
+                    if (ll == ii)
+                        continue;
+                    
+                    Float_t workval4 = effvals[ll];
+                    if(withsf)
+                        workval4*=sfvals[ll];
+                    workval3*=(1-workval4);
+                }
+                pdata+=workval1*workval2*workval3;
+            }
+        }
+    }
+    return pdata;
+}
+
+Float_t calc_weight_p2(std::vector<float> effvals,std::vector<float> sfvals,int nobj, bool withsf){
+    Float_t pdata= 0;
+    if( effvals.size() < nobj ){
+        return -1;
+    }
+    if( sfvals.size() < nobj ){
+        return -1;
+    }
+    
+    
+    for(int ii=0; ii<nobj; ii++){
+        Float_t workval1 = effvals[ii];
+        if(withsf)
+            workval1*=sfvals[ii];
+        for(int jj=0; jj<nobj; jj++){
+            if(ii==jj)
+                continue;
+            Float_t workval2 = effvals[jj];
+            if(withsf)
+                workval2*=sfvals[jj];
+            for(int kk=0; kk<nobj; kk++){
+                if (kk==ii)
+                    continue;
+                if (kk==jj)
+                    continue;
+                
+                Float_t workval3 = effvals[kk];
+                if(withsf)
+                    workval3*=sfvals[kk];
                 workval2*=(1.-workval3);
             }
             pdata+=workval1*workval2;
@@ -81,6 +130,7 @@ Float_t calc_weight_p2(std::vector<float> effvals,std::vector<float> sfvals,int 
     }
     return pdata;
 }
+
 
 
 Float_t calc_weight_p1(std::vector<float> effvals,std::vector<float> sfvals, int nobj, bool withsf){
@@ -406,6 +456,8 @@ int main (int argc, char *argv[])
         Double_t mc_elesfweight[3];
         Double_t mc_btgsfweight1[5];
         Double_t mc_btgsfweight2[5];
+        Double_t mc_btgsfweight3[5];
+        Double_t mc_btgsfweight4[5];
 		Int_t run_num;
 		Int_t evt_num;
 		Int_t lumi_num;
@@ -495,6 +547,8 @@ int main (int argc, char *argv[])
 //        myTree->Branch("mc_elesfweight",mc_elesfweight,"mc_elesfweight[3]/D");
         myTree->Branch("mc_btgsfweight1",mc_btgsfweight1,"mc_btgsfweight1[5]/D");
         myTree->Branch("mc_btgsfweight2",mc_btgsfweight2,"mc_btgsfweight2[5]/D");
+        myTree->Branch("mc_btgsfweight3",mc_btgsfweight3,"mc_btgsfweight3[5]/D");
+        myTree->Branch("mc_btgsfweight4",mc_btgsfweight4,"mc_btgsfweight4[5]/D");
 
         
 		// define the output tree
@@ -916,6 +970,8 @@ int main (int argc, char *argv[])
             float p1_sf = calc_weight_p1(btag_vals,btag_sf_vals,nJets,true);
             float p2=calc_weight_p2(btag_vals,btag_sf_vals,nJets,false);
             float p2_sf = calc_weight_p2(btag_vals,btag_sf_vals,nJets,true);
+            float p3=calc_weight_p3(btag_vals,btag_sf_vals,nJets,false);
+            float p3_sf = calc_weight_p3(btag_vals,btag_sf_vals,nJets,true);
             if(1.-p0>0.)
                 mc_btgsfweight1[0]=(1.-p0_sf)/(1.-p0);
             else
@@ -925,7 +981,17 @@ int main (int argc, char *argv[])
             else
                 mc_btgsfweight2[0]=0;
             
-            cout << "values btag p0: " << p0 << ", " << p0_sf <<" " << p1 << " " << p1_sf   << " " << p2 << " " << p2_sf   <<" " << mc_btgsfweight1[0] << " " << mc_btgsfweight2[0] <<  endl;
+            if(1.-p0-p1-p2>0.)
+                mc_btgsfweight3[0]=(1.-p0_sf-p1_sf-p2_sf)/(1.-p0-p1-p2);
+            else
+                mc_btgsfweight3[0]=0;
+            
+            if(1.-p0-p1-p2-p3>0.)
+                mc_btgsfweight4[0]=(1.-p0_sf-p1_sf-p2_sf-p3_sf)/(1.-p0-p1-p2-p3);
+            else
+                mc_btgsfweight4[0]=0;
+            
+//            cout << "values btag p0: " << p0 << ", " << p0_sf <<" " << p1 << " " << p1_sf   << " " << p2 << " " << p2_sf   <<" " << mc_btgsfweight1[0] << " " << mc_btgsfweight2[0] <<  endl;
 
 
 			
