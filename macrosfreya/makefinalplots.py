@@ -11,7 +11,7 @@ print datetime
 #set the tdr style
 tdrstyle.setTDRStyle()
 
-luminosity= 0.533+0.711
+luminosity= 0.533+0.711+0.335+0.017
 
 CMS_lumi.lumi_13TeV="L #approx "+str(luminosity)+" fb^{-1}"
 print "luminosity is: ",luminosity
@@ -53,7 +53,8 @@ file.ls()
 #listofnames=["h_eled0_","h_mud0_"]
 #listofnames=["h_elenjets_","h_elezpeak_","h_elenvtx_","h_elept_","h_eleeta_","h_eleIso_"]
 listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_","h_elenjets_","h_elept_","h_eleIso_","h_eled0zoom_","h_eleht_","h_elehtbinned_"]
-
+dirname="plots_"+datetime
+rt.gSystem.mkdir(dirname)
 for histname in listofnames :
     print "now making plots: ",histname
     canv =  rt.TCanvas("c2","c2",50,50,W,H)
@@ -122,7 +123,7 @@ for histname in listofnames :
     leg.AddEntry(hist_z,titletext,"f")
     titletext="W+jets :"+"{0:.2f}".format(hist_w.GetSum())
     leg.AddEntry(hist_w,titletext,"f")
-    titletext="tttt x100 :"+"{0:.2f}".format(hist_w.GetSum())
+    titletext="tttt x100 :"+"{0:.2f}".format(hist_tttt.GetSum())
     leg.AddEntry(hist_tttt,titletext,"l")
     hist_tttt.SetFillStyle(0)
     hist_tttt.SetLineWidth(2*hist_tttt.GetLineWidth())
@@ -138,6 +139,7 @@ for histname in listofnames :
     canv.RedrawAxis()
     frame = canv.GetFrame()
     frame.Draw()
-    canv.Print(histname+"stackplot"+datetime+".png")
-    canv.Print(histname+"stackplot"+datetime+".C")
+    canv.Print(dirname+"/"+histname+"stackplot"+datetime+".png")
+    canv.Print(dirname+"/"+histname+"stackplot"+datetime+".pdf")
+    canv.Print(dirname+"/"+histname+"stackplot"+datetime+".C")
 raw_input("Type Entry to end")
