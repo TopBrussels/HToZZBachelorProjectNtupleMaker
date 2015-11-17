@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <sys/stat.h>
+#include <map>
 
 //used TopTreeAnalysis classes
 #include "TopTreeProducer/interface/TRootRun.h"
@@ -32,16 +33,111 @@
 #include "../TopTreeAnalysisBase/MCInformation/interface/JetPartonMatching.h"
 #include "../TopTreeAnalysisBase/Reconstruction/interface/JetCorrectorParameters.h"
 #include "../TopTreeAnalysisBase/MCInformation/interface/LumiReWeighting.h"
+#include "../TopTreeAnalysisBase/Tools/interface/LeptonTools.h"
+#include "../TopTreeAnalysisBase/Tools/interface/BTagCalibrationStandalone.h"
+#include "../TopTreeAnalysisBase/Tools/interface/BTagWeightTools.h"
+#include "TH2D.h"
 
 using namespace std;
 using namespace reweight;
 using namespace TopTree;
 
+
+
+Float_t calc_weight_p2(std::vector<float> effvals,std::vector<float> sfvals,int nobj, bool withsf){
+    Float_t pdata= 0;
+    if( effvals.size() < nobj ){
+        return -1;
+    }
+    if( sfvals.size() < nobj ){
+        return -1;
+    }
+
+    
+    for(int ii=0; ii<nobj; ii++){
+        Float_t workval1 = effvals[ii];
+        if(withsf)
+            workval1*=sfvals[ii];
+        for(int jj=0; jj<nobj; jj++){
+            if(ii==jj)
+                continue;
+            Float_t workval2 = effvals[jj];
+            if(withsf)
+                workval2*=sfvals[jj];
+            for(int kk=0; kk<nobj; kk++){
+                if (kk==ii)
+                    continue;
+                if (kk==jj)
+                    continue;
+                
+                Float_t workval3 = effvals[kk];
+                if(withsf)
+                    workval3*=sfvals[kk];
+                workval2*=(1.-workval3);
+            }
+            pdata+=workval1*workval2;
+        }
+        
+    }
+    return pdata;
+}
+
+
+Float_t calc_weight_p1(std::vector<float> effvals,std::vector<float> sfvals, int nobj, bool withsf){
+    Float_t pdata= 0;
+    if( effvals.size() < nobj ){
+        return -1;
+    }
+    if( sfvals.size() < nobj ){
+        return -1;
+    }
+    for(int ii=0; ii<nobj; ii++){
+        Float_t workval1 = effvals[ii];
+        if(withsf)
+            workval1*=sfvals[ii];
+        for(int jj=0; jj<nobj; jj++){
+            if(ii==jj)
+                continue;
+            Float_t workval2 = effvals[jj];
+            if(withsf)
+                workval2*=sfvals[jj];
+            workval1*=1.-workval2;
+        }
+        pdata+=workval1;
+        
+    }
+    return pdata;
+}
+
+
+Float_t calc_weight_p0(std::vector<float> effvals,std::vector<float> sfvals, int nobj, bool withsf){
+    Float_t pdata= 1;
+    if( effvals.size() < nobj ){
+        return -1;
+    }
+    if( sfvals.size() < nobj ){
+        return -1;
+    }
+
+    
+    for(int ii=0; ii<nobj; ii++){
+//        cout << effvals[ii] << " " << sfvals[ii] << endl;
+        Float_t workval=effvals[ii];
+        if( withsf)
+            workval *=sfvals[ii];
+        pdata*= 1.-workval;
+    }
+    return pdata;
+}
+
+
+
+
 int main (int argc, char *argv[])
 {
 	
 	clock_t start = clock();
-	
+
 	
 	/////////////////////
 	// Configuration
@@ -204,11 +300,34 @@ int main (int argc, char *argv[])
 		
 	}
 	
-	
-	
+    // all sorts of calibration loading:
+    BTagCalibration btagsfweight_hf("CSVv2","/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/CSVv2_13TeV.csv");
+    BTagCalibrationReader btagsfreader(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
+    BTagCalibrationReader btagsfreadercomb(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"comb","central");
+
+    
+    MuonSFWeight musfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Muon_SF_TopEA.root","SF_totErr");
+    ElectronSFWeight elesfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Elec_SF_TopEA.root","GlobalSF");
 	
 	LumiReWeighting LumiWeights( "/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root","/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run254231-258750Cert/nominal.root","pileup","pileup");
-	
+    
+    TFile *btagcalibs = new TFile("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/HToZZBachelorProjectNtupleMaker/output_btagging.root","READ");
+    btagcalibs->cd();
+    
+    std::map<int,TH2D*> btag_efficiencies;
+    btag_efficiencies[0]=(TH2D*)btagcalibs->Get("b_jetPtEta_Medium_LF");
+    btag_efficiencies[4]=(TH2D*)btagcalibs->Get("b_jetPtEta_Medium_C");
+    btag_efficiencies[5]=(TH2D*)btagcalibs->Get("b_jetPtEta_Medium_HF");
+    btag_efficiencies[10]=(TH2D*)btagcalibs->Get("b_jetPtEta_LF");
+    btag_efficiencies[14]=(TH2D*)btagcalibs->Get("b_jetPtEta_C");
+    btag_efficiencies[15]=(TH2D*)btagcalibs->Get("b_jetPtEta_HF");
+   
+
+    
+    
+    
+    std::vector<float> btag_vals(20,0);
+    std::vector<float> btag_sf_vals(20,0);
 	for (unsigned int d = 0; d < datasets.size (); d++) {
 		
 		string previousFilename = "";
@@ -241,6 +360,9 @@ int main (int argc, char *argv[])
 		Double_t E_electron[10];
 		Double_t d0_electron[10];
 		Double_t pfIso_electron[10];
+        Double_t sf_electron[10];
+        Double_t sfh_electron[10];
+        Double_t sfl_electron[10];
 		Int_t charge_electron[10];
 		Int_t loose_electron[10];
 		Int_t medium_electron[10];
@@ -255,6 +377,9 @@ int main (int argc, char *argv[])
 		Double_t E_muon[10];
 		Double_t d0_muon[10];
 		Double_t pfIso_muon[10];
+        Double_t sf_muon[10];
+        Double_t sfh_muon[10];
+        Double_t sfl_muon[10];
 		Int_t charge_muon[10];
 		
 		Int_t nJets;
@@ -264,7 +389,10 @@ int main (int argc, char *argv[])
 		Double_t E_jet[20];
 		Double_t dx_jet[20];
 		Double_t dy_jet[20];
-		Double_t btag_jet[20];
+        Double_t sfb_jet[20];
+        Double_t effb_jet[20];
+        Double_t btag_jet[20];
+        Int_t flav_jet[20];
 		Double_t missingEt;
 		// various weights
 		Double_t pu_weight;
@@ -274,6 +402,10 @@ int main (int argc, char *argv[])
 		Double_t mc_baseweight;
 		Double_t mc_scaleupweight;
 		Double_t mc_scaledownweight;
+        Double_t mc_muonsfweight[3];
+        Double_t mc_elesfweight[3];
+        Double_t mc_btgsfweight1[5];
+        Double_t mc_btgsfweight2[5];
 		Int_t run_num;
 		Int_t evt_num;
 		Int_t lumi_num;
@@ -312,7 +444,10 @@ int main (int argc, char *argv[])
 		
 		
 		myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
-		myTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        myTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        myTree->Branch("sf_electron",sf_electron,"sf_electron[nElectrons]/D");
+        myTree->Branch("sfl_electron",sfl_electron,"sfl_electron[nElectrons]/D");
+        myTree->Branch("sfh_electron",sfh_electron,"sfh_electron[nElectrons]/D");
 		myTree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
 		myTree->Branch("eta_electron",eta_electron,"eta_electron[nElectrons]/D");
 		myTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
@@ -327,7 +462,10 @@ int main (int argc, char *argv[])
 		//
 		
 		
-		myTree->Branch("nMuons",&nMuons, "nMuons/I");
+        myTree->Branch("nMuons",&nMuons, "nMuons/I");
+        myTree->Branch("sf_muon",sf_muon,"sf_muon[nMuons]/D");
+        myTree->Branch("sfl_muon",sfl_muon,"sfl_muon[nMuons]/D");
+        myTree->Branch("sfh_muon",sfh_muon,"sfh_muon[nMuons]/D");
 		myTree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
 		myTree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
 		myTree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
@@ -341,16 +479,24 @@ int main (int argc, char *argv[])
 		myTree->Branch("phi_jet",phi_jet,"phi_jet[nJets]/D");
 		myTree->Branch("eta_jet",eta_jet,"eta_jet[nJets]/D");
 		myTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
-		myTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
-		myTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
-		myTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        myTree->Branch("sfb_jet",sfb_jet,"sfb_jet[nJets]/D");
+        myTree->Branch("effb_jet",effb_jet,"effb_jet[nJets]/D");
+        myTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
+        myTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
+        myTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        myTree->Branch("flav_jet",flav_jet,"flav_jet[nJets]/I");
 		
 		myTree->Branch("missingEt",&missingEt,"missingEt/D");
 		myTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
 		myTree->Branch("mc_baseweight",&mc_baseweight,"mc_baseweight/D");
 		myTree->Branch("mc_scaleupweight",&mc_scaleupweight,"mc_scaleupweight/D");
 		myTree->Branch("mc_scaledownweight",&mc_scaledownweight,"mc_scaledownweight/D");
-		
+//        myTree->Branch("mc_muonsfweight",mc_muonsfweight,"mc_muonsfweight[3]/D");
+//        myTree->Branch("mc_elesfweight",mc_elesfweight,"mc_elesfweight[3]/D");
+        myTree->Branch("mc_btgsfweight1",mc_btgsfweight1,"mc_btgsfweight1[5]/D");
+        myTree->Branch("mc_btgsfweight2",mc_btgsfweight2,"mc_btgsfweight2[5]/D");
+
+        
 		// define the output tree
 		TTree* dilepTree = new TTree("dileptree","dileptree");
 		dilepTree->Branch("isdata",&isdata,"isdata/I");
@@ -367,8 +513,9 @@ int main (int argc, char *argv[])
 		dilepTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
 		
 		
-		dilepTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
-		dilepTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        dilepTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
+        dilepTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        dilepTree->Branch("sf_electron",sf_electron,"sf_electron[nElectrons]/D");
 		dilepTree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
 		dilepTree->Branch("eta_electron",eta_electron,"eta_electron[nElectrons]/D");
 		dilepTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
@@ -383,8 +530,9 @@ int main (int argc, char *argv[])
 		//
 		
 		
-		dilepTree->Branch("nMuons",&nMuons, "nMuons/I");
-		dilepTree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
+        dilepTree->Branch("nMuons",&nMuons, "nMuons/I");
+        dilepTree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
+        dilepTree->Branch("sf_muon",sf_muon,"sf_muon[nMuons]/D");
 		dilepTree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
 		dilepTree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
 		dilepTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
@@ -399,19 +547,26 @@ int main (int argc, char *argv[])
 		dilepTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
 		dilepTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
 		dilepTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
-		dilepTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        dilepTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        dilepTree->Branch("sfb_jet",sfb_jet,"sfb_jet[nJets]/D");
+        dilepTree->Branch("flav_jet",flav_jet,"flav_jet[nJets]/I");
+
 		
 		dilepTree->Branch("missingEt",&missingEt,"missingEt/D");
 		dilepTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
 		dilepTree->Branch("mc_baseweight",&mc_baseweight,"mc_baseweight/D");
 		dilepTree->Branch("mc_scaleupweight",&mc_scaleupweight,"mc_scaleupweight/D");
-		dilepTree->Branch("mc_scaledownweight",&mc_scaledownweight,"mc_scaledownweight/D");
+        dilepTree->Branch("mc_scaledownweight",&mc_scaledownweight,"mc_scaledownweight/D");
+//        dilepTree->Branch("mc_muonsfweight",mc_muonsfweight,"mc_muonsfweight[3]/D");
+//        dilepTree->Branch("mc_elesfweight",mc_elesfweight,"mc_elesfweight[3]/D");
+//        dilepTree->Branch("mc_btgsfweight",mc_btgsfweight,"mc_btgsfweight[5]/D");
+
 		
 		
 		//        myTree->Print();
 		
 		
-		
+        Double_t workleptoneta, workleptonpt;
 		
 		//open files and load
 		treeLoader.LoadDataset (datasets[d], anaEnv);
@@ -655,6 +810,18 @@ int main (int argc, char *argv[])
 				loose_electron[nElectrons]=1;
 				medium_electron[nElectrons]=0;
 				tight_electron[nElectrons]=0;
+                workleptoneta=selectedElectrons[iele]->Eta();
+                workleptonpt=selectedElectrons[iele]->Pt();
+                if(selectedElectrons[iele]->Pt()>500)
+                    workleptonpt=499.999;
+                else if(selectedElectrons[iele]->Pt()<20)
+                    workleptonpt=20.0001;
+                if(fabs(selectedElectrons[iele]->Eta())>2.4)
+                    workleptoneta=2.3999;
+                sf_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt);
+                sfh_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt,1);
+                sfl_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt,-1);
+
 				pfIso_electron[nElectrons]=selectedElectrons[iele]->relPfIso(3,0);
 				charge_electron[nElectrons]=selectedElectrons[iele]->charge();
 				for(int jele=0; jele<selectedMediumElectrons.size(); jele++){
@@ -677,6 +844,7 @@ int main (int argc, char *argv[])
 				
 				nElectrons++;
 			}
+            // get SFs for electrons
 			// loop over muons
 			nMuons=0;
 			for(int imuo=0; imuo<selectedMuons.size() && nMuons<10; imuo++){
@@ -686,7 +854,16 @@ int main (int argc, char *argv[])
 				E_muon[nMuons]=selectedMuons[imuo]->E();
 				d0_muon[nMuons]=selectedMuons[imuo]->d0();
 				pfIso_muon[nMuons]=selectedMuons[imuo]->relPfIso(3,0);
-				
+                workleptonpt=selectedMuons[imuo]->Pt();
+                workleptoneta=selectedMuons[imuo]->Eta();
+                if(selectedMuons[imuo]->Pt()>500)
+                    workleptonpt=499.999;
+                else if(selectedMuons[imuo]->Pt()<20)
+                    workleptonpt=20.0001;
+                sf_muon[nElectrons]=musfweight.at(workleptoneta,workleptonpt);
+                sfh_muon[nElectrons]=musfweight.at(workleptoneta,workleptonpt,1);
+                sfl_muon[nElectrons]=musfweight.at(workleptoneta,workleptonpt,-1);
+
 				
 				charge_muon[nMuons]=selectedMuons[imuo]->charge();
 				nMuons++;
@@ -701,8 +878,56 @@ int main (int argc, char *argv[])
 				dx_jet[nJets]=selectedJets[ijet]->vx();
 				dy_jet[nJets]=selectedJets[ijet]->vy();
 				btag_jet[nJets]=selectedJets[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
+                flav_jet[nJets]=selectedJets[ijet]->hadronFlavour();
+                sfb_jet[nJets]=1.0;
+                //cout << "jet flavour and SF: " << flav_jet[nJets] << endl;
+                if(fabs(eta_jet[nJets])>2.4)
+                    sfb_jet[nJets]=0.0;
+                else{
+                    if(fabs(flav_jet[nJets])==5)
+                        sfb_jet[nJets]=btagsfreader.eval(selectedJets[ijet]);
+                    else if(fabs(flav_jet[nJets])==4)
+                        sfb_jet[nJets]=btagsfreader.eval(selectedJets[ijet]);
+                    else if(fabs(flav_jet[nJets])==0)
+                        sfb_jet[nJets]=btagsfreadercomb.eval(selectedJets[ijet]);
+                }
+                
+                int binx =btag_efficiencies[flav_jet[nJets]]->GetXaxis()->FindBin(pT_jet[nJets]);
+                int biny =btag_efficiencies[flav_jet[nJets]]->GetYaxis()->FindBin(eta_jet[nJets]);
+                
+                effb_jet[nJets]=btag_efficiencies[flav_jet[nJets]]->GetBinContent(binx,biny);
+                if(btag_efficiencies[flav_jet[nJets]+10]->GetBinContent(binx,biny)>0)
+                    effb_jet[nJets]/=btag_efficiencies[flav_jet[nJets]+10]->GetBinContent(binx,biny);
+
+                    
+                
 				nJets++;
+                
 			}
+            // copy over to vectors and calculate SFs for btagging, inefficient but needs copy anyway so only using good ejts
+            for(int ijet=0; ijet<nJets; ijet++){
+                btag_sf_vals[ijet]=sfb_jet[ijet];
+                btag_vals[ijet]=effb_jet[ijet];
+                
+            }
+            float p0=calc_weight_p0(btag_vals,btag_sf_vals,nJets,false);
+            float p0_sf = calc_weight_p0(btag_vals,btag_sf_vals,nJets,true);
+            float p1=calc_weight_p1(btag_vals,btag_sf_vals,nJets,false);
+            float p1_sf = calc_weight_p1(btag_vals,btag_sf_vals,nJets,true);
+            float p2=calc_weight_p2(btag_vals,btag_sf_vals,nJets,false);
+            float p2_sf = calc_weight_p2(btag_vals,btag_sf_vals,nJets,true);
+            if(1.-p0>0.)
+                mc_btgsfweight1[0]=(1.-p0_sf)/(1.-p0);
+            else
+                mc_btgsfweight1[0]=0;
+            if(1.-p0-p1>0.)
+                mc_btgsfweight2[0]=(1.-p0_sf-p1_sf)/(1.-p0-p1);
+            else
+                mc_btgsfweight2[0]=0;
+            
+            cout << "values btag p0: " << p0 << ", " << p0_sf <<" " << p1 << " " << p1_sf   << " " << p2 << " " << p2_sf   <<" " << mc_btgsfweight1[0] << " " << mc_btgsfweight2[0] <<  endl;
+
+
 			
 			
 			if( nElectrons+nMuons>=2){
@@ -740,6 +965,7 @@ int main (int argc, char *argv[])
 	delete tcdatasets;
 	delete tcAnaEnv;
 	delete configTree;
+    btagcalibs->Close();
 	
 	cout << "It took us " << ((double)clock() - start) / CLOCKS_PER_SEC << " to run the program" << endl;
 	
