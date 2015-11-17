@@ -46,13 +46,13 @@ b_elehtbinned.SetXTitle("H_{T} [GeV]")
 names=["Wjets","Zjets","ttbar","tw","atw","tttt","data"]
 colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kPink,ROOT.kPink,ROOT.kGray,ROOT.kBlack]
 xsecs=[20508.9*3,2008.4*3,831.76,35.85,35.85,0.009,-1]
-filenames=["WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8*.root",
-           "DYJetsToLL_M-50_TuneCUETP8M1_13TeV-madgraphMLM-*.root",
-           "TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia*.root",
-           "ST_tW_top_5f_inclusiveDecays_13TeV-powheg*.root",
-           "ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-*.root",
-           "TTTT_TuneCUETP8M1_13TeV-amcatnlo-pythia8.root",
-           "SingleElectron-Run2015D-Prompt*.root"]
+filenames=["ntuples/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8*.root",
+           "ntuples/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-madgraphMLM-*.root",
+           "ntuples/TTJets_TuneCUETP8M1_13TeV-madgraphMLM-pythia*.root",
+           "ntuples/ST_tW_top_5f_inclusiveDecays_13TeV-powheg*.root",
+           "ntuples/ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-*.root",
+           "ntuples/TTTT_TuneCUETP8M1_13TeV-amcatnlo-pythia8.root",
+           "ntuples/SingleElectron-Run2015D-Prompt*.root"]
 
 startevcounts=[0.,0.,0.,0.,0.,0.,0.,0.,0.]
 ntupleevcounts=[0.,0,0.,0.,0.,0.,0.,0.,0.,0.]
@@ -212,7 +212,9 @@ for isam in range(len(xsecs)) :
         if ngoodelectrons == 1:
             totalweight=lepweight*totalweight
             totalweightnopu=lepweight*totalweightnopu
-
+            if workxsec == -1:
+                totalweight = 1
+                totalweightnopu = 1
             h_elenjets.Fill(iev.nJets,totalweight)
             h_elenvtx.Fill(iev.nvtx,totalweight)
             h_elenopunvtx.Fill(iev.nvtx,totalweightnopu)
