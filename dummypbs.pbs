@@ -1,5 +1,5 @@
 #! /bin/bash
-#PBS -l walltime=1:00:00
+#PBS -l walltime=0:20:00
 #PBS -r n
 #PBS -j oe
 #PBS -k oe
@@ -17,6 +17,7 @@ echo '$X509_USER_PROXY: '$X509_USER_PROXY
 
 echo “starting dir:”
 pwd
+cd working
 WORKDIR=`pwd`
 echo "WORKDIR = " $WORKDIR
 cd /localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/HToZZBachelorProjectNtupleMaker

@@ -353,11 +353,12 @@ int main (int argc, char *argv[])
     // all sorts of calibration loading:
     BTagCalibration btagsfweight_hf("CSVv2","/localgrid/fblekman/analysis/CMSSW_7_6_1/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/JP_13TeV_25ns_combToMujets.csv");
     BTagCalibrationReader btagsfreader(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
-    BTagCalibrationReader btagsfreadercomb(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"comb","central");
+    BTagCalibrationReader btagsfreadercomb(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
 
     
-    MuonSFWeight musfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonID_Z_RunD_Reco74X_Nov20.root","SF_totErr");
-    MuonSFWeight musfweightIso("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonIso_Z_RunD_Reco74X_Nov20.root","SF_totErr");
+    MuonSFWeight musfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonID_Z_RunD_Reco74X_Nov20.root","NUM_MediumID_DEN_genTracks_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+    MuonSFWeight musfweightIso("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonIso_Z_RunD_Reco74X_Nov20.root","NUM_LooseRelIso_DEN_MediumID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+    
     ElectronSFWeight elesfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Elec_SF_TopEA.root","GlobalSF");
 	
 	LumiReWeighting LumiWeights( "/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root","/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run254231-258750Cert/nominal.root","pileup","pileup");
@@ -875,8 +876,8 @@ int main (int argc, char *argv[])
 				pfIso_muon[nMuons]=selectedMuons[imuo]->relPfIso(3,0);
                 workleptonpt=selectedMuons[imuo]->Pt();
                 workleptoneta=selectedMuons[imuo]->Eta();
-                if(selectedMuons[imuo]->Pt()>500)
-                    workleptonpt=499.999;
+                if(selectedMuons[imuo]->Pt()>120)
+                    workleptonpt=119.999;
                 else if(selectedMuons[imuo]->Pt()<20)
                     workleptonpt=20.0001;
                 sf_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt);
@@ -1054,8 +1055,8 @@ int main (int argc, char *argv[])
                 pfIso_muon[nMuons]=displacedMuons[imuo]->relPfIso(3,0);
                 workleptonpt=displacedMuons[imuo]->Pt();
                 workleptoneta=displacedMuons[imuo]->Eta();
-                if(displacedMuons[imuo]->Pt()>500)
-                    workleptonpt=499.999;
+                if(displacedMuons[imuo]->Pt()>120)
+                    workleptonpt=119.999;
                 else if(displacedMuons[imuo]->Pt()<20)
                     workleptonpt=20.0001;
                 sf_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt);

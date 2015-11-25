@@ -30,7 +30,7 @@ do
 	mv tmpfile $pbsoutname
 #cat $pbsoutname
 
-	qsub -q localgrid $pbsoutname
+	qsub -q short $pbsoutname
 
 
     let "counter++"
