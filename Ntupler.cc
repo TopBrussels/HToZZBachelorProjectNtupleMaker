@@ -410,7 +410,9 @@ int main (int argc, char *argv[])
 		Double_t phi_electron[10];
 		Double_t eta_electron[10];
 		Double_t E_electron[10];
-		Double_t d0_electron[10];
+        Double_t d0_electron[10];
+        Double_t d0bs_electron[10];
+        Double_t dzbs_electron[10];
 		Double_t pfIso_electron[10];
         Double_t sf_electron[10];
         Double_t sfh_electron[10];
@@ -428,7 +430,9 @@ int main (int argc, char *argv[])
 		Double_t phi_muon[10];
 		Double_t eta_muon[10];
 		Double_t E_muon[10];
-		Double_t d0_muon[10];
+        Double_t d0_muon[10];
+        Double_t d0bs_muon[10];
+        Double_t dzbs_muon[10];
 		Double_t pfIso_muon[10];
         Double_t sf_muon[10];
         Double_t sfh_muon[10];
@@ -532,7 +536,9 @@ int main (int argc, char *argv[])
 		myTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
 		myTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
 		myTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
-		myTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        myTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        myTree->Branch("d0bs_electron",d0bs_electron,"d0b_electron[nElectrons]/D");
+        myTree->Branch("dzbs_electron",dzbs_electron,"dzbs_electron[nElectrons]/D");
 		myTree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
 		myTree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
 		myTree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
@@ -555,7 +561,10 @@ int main (int argc, char *argv[])
 		myTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
 		myTree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
 		myTree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
-		myTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
+        myTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
+        myTree->Branch("dzbs_muon",dzbs_muon,"dzbs_muon[nMuons]/D");
+        myTree->Branch("d0bs_muon",d0bs_muon,"d0bs_muon[nMuons]/D");
+
 		
 		myTree->Branch("nJets",&nJets, "nJets/I");
 		myTree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
@@ -582,10 +591,173 @@ int main (int argc, char *argv[])
         myTree->Branch("mc_btgsfweight4",mc_btgsfweight4,"mc_btgsfweight4[5]/D");
 
         
-        TTree *dileptree = (TTree*) myTree->Clone("dileptree");
+        // define the output tree
+        TTree* dileptree = new TTree("tree","tree");
+        dileptree->Branch("isdata",&isdata,"isdata/I");
+        dileptree->Branch("run_num",&run_num,"run_num/I");
+        dileptree->Branch("evt_num",&evt_num,"evt_num/I");
+        dileptree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        dileptree->Branch("nvtx",&nvtx,"nvtx/I");
+        dileptree->Branch("npu",&npu,"npu/I");
+        dileptree->Branch("trig_dilepton_emu",&trig_dilepton_emu,"trig_dilepton_emu/I");
+        dileptree->Branch("trig_dilepton_ee",&trig_dilepton_ee,"trig_dilepton_ee/I");
+        dileptree->Branch("trig_dilepton_mumu",&trig_dilepton_mumu,"trig_dilepton_mumu/I");
+        dileptree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
+        dileptree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
+        dileptree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
         
-        TTree *disptree = (TTree*) myTree->Clone("disptree");
-				
+        
+        dileptree->Branch("nElectrons",&nElectrons, "nElectrons/I");
+        dileptree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        dileptree->Branch("drJet_electron",drJet_electron,"drJet_electron[nElectrons]/D");
+        dileptree->Branch("sf_electron",sf_electron,"sf_electron[nElectrons]/D");
+        dileptree->Branch("sfl_electron",sfl_electron,"sfl_electron[nElectrons]/D");
+        dileptree->Branch("sfh_electron",sfh_electron,"sfh_electron[nElectrons]/D");
+        dileptree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
+        dileptree->Branch("eta_electron",eta_electron,"eta_electron[nElectrons]/D");
+        dileptree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
+        dileptree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
+        dileptree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
+        dileptree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        
+        dileptree->Branch("d0bs_electron",d0bs_electron,"d0b_electron[nElectrons]/D");
+        dileptree->Branch("dzbs_electron",dzbs_electron,"dzbs_electron[nElectrons]/D");
+        dileptree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
+        dileptree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
+        dileptree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
+        //        dileptree->Branch("mediumMVA_electron",mediumMVA_electron,"mediumMVA_electron[nElectrons]/I");
+        //        dileptree->Branch("tightMVA_electron",tightMVA_electron,"tightMVA_electron[nElectrons]/I");
+        //
+        
+        
+        dileptree->Branch("nMuons",&nMuons, "nMuons/I");
+        dileptree->Branch("sf_muon",sf_muon,"sf_muon[nMuons]/D");
+        dileptree->Branch("sfl_muon",sfl_muon,"sfl_muon[nMuons]/D");
+        dileptree->Branch("sfh_muon",sfh_muon,"sfh_muon[nMuons]/D");
+        dileptree->Branch("sfIso_muon",sfIso_muon,"sfIso_muon[nMuons]/D");
+        dileptree->Branch("sfIsol_muon",sfIsol_muon,"sfIsol_muon[nMuons]/D");
+        dileptree->Branch("sfIsoh_muon",sfIsoh_muon,"sfIsoh_muon[nMuons]/D");
+        dileptree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
+        dileptree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
+        dileptree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
+        dileptree->Branch("drJet_muon",drJet_muon,"drJet_muon[nMuons]/D");
+        dileptree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
+        dileptree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
+        dileptree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
+        dileptree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
+        dileptree->Branch("dzbs_muon",dzbs_muon,"dzbs_muon[nMuons]/D");
+        dileptree->Branch("d0bs_muon",d0bs_muon,"d0bs_muon[nMuons]/D");
+        
+        dileptree->Branch("nJets",&nJets, "nJets/I");
+        dileptree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
+        dileptree->Branch("phi_jet",phi_jet,"phi_jet[nJets]/D");
+        dileptree->Branch("eta_jet",eta_jet,"eta_jet[nJets]/D");
+        dileptree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
+        dileptree->Branch("sfb_jet",sfb_jet,"sfb_jet[nJets]/D");
+        dileptree->Branch("effb_jet",effb_jet,"effb_jet[nJets]/D");
+        dileptree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
+        dileptree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
+        dileptree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        dileptree->Branch("flav_jet",flav_jet,"flav_jet[nJets]/I");
+        
+        dileptree->Branch("missingEt",&missingEt,"missingEt/D");
+        dileptree->Branch("pu_weight",&pu_weight,"pu_weight/D");
+        dileptree->Branch("mc_baseweight",&mc_baseweight,"mc_baseweight/D");
+        dileptree->Branch("mc_scaleupweight",&mc_scaleupweight,"mc_scaleupweight/D");
+        dileptree->Branch("mc_scaledownweight",&mc_scaledownweight,"mc_scaledownweight/D");
+        //        dileptree->Branch("mc_muonsfweight",mc_muonsfweight,"mc_muonsfweight[3]/D");
+        //        dileptree->Branch("mc_elesfweight",mc_elesfweight,"mc_elesfweight[3]/D");
+        dileptree->Branch("mc_btgsfweight1",mc_btgsfweight1,"mc_btgsfweight1[5]/D");
+        dileptree->Branch("mc_btgsfweight2",mc_btgsfweight2,"mc_btgsfweight2[5]/D");
+        dileptree->Branch("mc_btgsfweight3",mc_btgsfweight3,"mc_btgsfweight3[5]/D");
+        dileptree->Branch("mc_btgsfweight4",mc_btgsfweight4,"mc_btgsfweight4[5]/D");
+
+        
+        
+        
+        // define the output tree
+        TTree* disptree = new TTree("tree","tree");
+        disptree->Branch("isdata",&isdata,"isdata/I");
+        disptree->Branch("run_num",&run_num,"run_num/I");
+        disptree->Branch("evt_num",&evt_num,"evt_num/I");
+        disptree->Branch("lumi_num",&lumi_num,"lumi_num/I");
+        disptree->Branch("nvtx",&nvtx,"nvtx/I");
+        disptree->Branch("npu",&npu,"npu/I");
+        disptree->Branch("trig_dilepton_emu",&trig_dilepton_emu,"trig_dilepton_emu/I");
+        disptree->Branch("trig_dilepton_ee",&trig_dilepton_ee,"trig_dilepton_ee/I");
+        disptree->Branch("trig_dilepton_mumu",&trig_dilepton_mumu,"trig_dilepton_mumu/I");
+        disptree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
+        disptree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
+        disptree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
+        
+        
+        disptree->Branch("nElectrons",&nElectrons, "nElectrons/I");
+        disptree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        disptree->Branch("drJet_electron",drJet_electron,"drJet_electron[nElectrons]/D");
+        disptree->Branch("sf_electron",sf_electron,"sf_electron[nElectrons]/D");
+        disptree->Branch("sfl_electron",sfl_electron,"sfl_electron[nElectrons]/D");
+        disptree->Branch("sfh_electron",sfh_electron,"sfh_electron[nElectrons]/D");
+        disptree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
+        disptree->Branch("eta_electron",eta_electron,"eta_electron[nElectrons]/D");
+        disptree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
+        disptree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
+        disptree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
+        disptree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
+        
+        disptree->Branch("d0bs_electron",d0bs_electron,"d0b_electron[nElectrons]/D");
+        disptree->Branch("dzbs_electron",dzbs_electron,"dzbs_electron[nElectrons]/D");
+        disptree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
+        disptree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
+        disptree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
+        //        disptree->Branch("mediumMVA_electron",mediumMVA_electron,"mediumMVA_electron[nElectrons]/I");
+        //        disptree->Branch("tightMVA_electron",tightMVA_electron,"tightMVA_electron[nElectrons]/I");
+        //
+        
+        
+        disptree->Branch("nMuons",&nMuons, "nMuons/I");
+        disptree->Branch("sf_muon",sf_muon,"sf_muon[nMuons]/D");
+        disptree->Branch("sfl_muon",sfl_muon,"sfl_muon[nMuons]/D");
+        disptree->Branch("sfh_muon",sfh_muon,"sfh_muon[nMuons]/D");
+        disptree->Branch("sfIso_muon",sfIso_muon,"sfIso_muon[nMuons]/D");
+        disptree->Branch("sfIsol_muon",sfIsol_muon,"sfIsol_muon[nMuons]/D");
+        disptree->Branch("sfIsoh_muon",sfIsoh_muon,"sfIsoh_muon[nMuons]/D");
+        disptree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
+        disptree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
+        disptree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
+        disptree->Branch("drJet_muon",drJet_muon,"drJet_muon[nMuons]/D");
+        disptree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
+        disptree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
+        disptree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
+        disptree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
+        disptree->Branch("dzbs_muon",dzbs_muon,"dzbs_muon[nMuons]/D");
+        disptree->Branch("d0bs_muon",d0bs_muon,"d0bs_muon[nMuons]/D");
+        
+        disptree->Branch("nJets",&nJets, "nJets/I");
+        disptree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
+        disptree->Branch("phi_jet",phi_jet,"phi_jet[nJets]/D");
+        disptree->Branch("eta_jet",eta_jet,"eta_jet[nJets]/D");
+        disptree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
+        disptree->Branch("sfb_jet",sfb_jet,"sfb_jet[nJets]/D");
+        disptree->Branch("effb_jet",effb_jet,"effb_jet[nJets]/D");
+        disptree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
+        disptree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
+        disptree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
+        disptree->Branch("flav_jet",flav_jet,"flav_jet[nJets]/I");
+        
+        disptree->Branch("missingEt",&missingEt,"missingEt/D");
+        disptree->Branch("pu_weight",&pu_weight,"pu_weight/D");
+        disptree->Branch("mc_baseweight",&mc_baseweight,"mc_baseweight/D");
+        disptree->Branch("mc_scaleupweight",&mc_scaleupweight,"mc_scaleupweight/D");
+        disptree->Branch("mc_scaledownweight",&mc_scaledownweight,"mc_scaledownweight/D");
+        //        disptree->Branch("mc_muonsfweight",mc_muonsfweight,"mc_muonsfweight[3]/D");
+        //        disptree->Branch("mc_elesfweight",mc_elesfweight,"mc_elesfweight[3]/D");
+        disptree->Branch("mc_btgsfweight1",mc_btgsfweight1,"mc_btgsfweight1[5]/D");
+        disptree->Branch("mc_btgsfweight2",mc_btgsfweight2,"mc_btgsfweight2[5]/D");
+        disptree->Branch("mc_btgsfweight3",mc_btgsfweight3,"mc_btgsfweight3[5]/D");
+        disptree->Branch("mc_btgsfweight4",mc_btgsfweight4,"mc_btgsfweight4[5]/D");
+        
+
+    
 		
         Double_t workleptoneta, workleptonpt;
 		
@@ -825,6 +997,8 @@ int main (int argc, char *argv[])
 				eta_electron[nElectrons]=selectedElectrons[iele]->Eta();
 				E_electron[nElectrons]=selectedElectrons[iele]->E();
 				d0_electron[nElectrons]=selectedElectrons[iele]->d0();
+                d0bs_electron[nElectrons]=selectedElectrons[iele]->d0BeamSpot();
+//                dzbs_electron[nElectrons]=selectedElectrons[iele]->dzBeamSpot();
 				loose_electron[nElectrons]=1;
 				medium_electron[nElectrons]=0;
 				tight_electron[nElectrons]=0;
@@ -873,6 +1047,8 @@ int main (int argc, char *argv[])
 				eta_muon[nMuons]=selectedMuons[imuo]->Eta();
 				E_muon[nMuons]=selectedMuons[imuo]->E();
 				d0_muon[nMuons]=selectedMuons[imuo]->d0();
+                d0bs_muon[nMuons]=selectedMuons[imuo]->d0BeamSpot();
+//                dzbs_muon[nMuons]=selectedMuons[imuo]->dzBeamSpot();
 				pfIso_muon[nMuons]=selectedMuons[imuo]->relPfIso(3,0);
                 workleptonpt=selectedMuons[imuo]->Pt();
                 workleptoneta=selectedMuons[imuo]->Eta();
@@ -1014,6 +1190,9 @@ int main (int argc, char *argv[])
                 eta_electron[nElectrons]=displacedElectrons[iele]->Eta();
                 E_electron[nElectrons]=displacedElectrons[iele]->E();
                 d0_electron[nElectrons]=displacedElectrons[iele]->d0();
+                
+                d0bs_electron[nElectrons]=displacedElectrons[iele]->d0BeamSpot();
+                dzbs_electron[nElectrons]=displacedElectrons[iele]->dzBeamSpot();
                 loose_electron[nElectrons]=1;
                 medium_electron[nElectrons]=0;
                 tight_electron[nElectrons]=0;
@@ -1052,6 +1231,8 @@ int main (int argc, char *argv[])
                 eta_muon[nMuons]=displacedMuons[imuo]->Eta();
                 E_muon[nMuons]=displacedMuons[imuo]->E();
                 d0_muon[nMuons]=displacedMuons[imuo]->d0();
+                d0bs_muon[nMuons]=displacedMuons[imuo]->d0BeamSpot();
+                dzbs_muon[nMuons]=displacedMuons[imuo]->dzBeamSpot();
                 pfIso_muon[nMuons]=displacedMuons[imuo]->relPfIso(3,0);
                 workleptonpt=displacedMuons[imuo]->Pt();
                 workleptoneta=displacedMuons[imuo]->Eta();
