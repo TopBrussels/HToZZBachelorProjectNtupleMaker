@@ -351,12 +351,13 @@ int main (int argc, char *argv[])
 	}
 	
     // all sorts of calibration loading:
-    BTagCalibration btagsfweight_hf("CSVv2","/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/CSVv2_13TeV.csv");
+    BTagCalibration btagsfweight_hf("CSVv2","/localgrid/fblekman/analysis/CMSSW_7_6_1/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/JP_13TeV_25ns_combToMujets.csv");
     BTagCalibrationReader btagsfreader(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
     BTagCalibrationReader btagsfreadercomb(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"comb","central");
 
     
-    MuonSFWeight musfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Muon_SF_TopEA.root","SF_totErr");
+    MuonSFWeight musfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonID_Z_RunD_Reco74X_Nov20.root","SF_totErr");
+    MuonSFWeight musfweightIso("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonIso_Z_RunD_Reco74X_Nov20.root","SF_totErr");
     ElectronSFWeight elesfweight("/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Elec_SF_TopEA.root","GlobalSF");
 	
 	LumiReWeighting LumiWeights( "/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root","/localgrid/fblekman/analysis/CMSSW_7_4_15/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run254231-258750Cert/nominal.root","pileup","pileup");
@@ -413,6 +414,7 @@ int main (int argc, char *argv[])
         Double_t sf_electron[10];
         Double_t sfh_electron[10];
         Double_t sfl_electron[10];
+        Double_t drJet_electron[10];
 		Int_t charge_electron[10];
 		Int_t loose_electron[10];
 		Int_t medium_electron[10];
@@ -430,6 +432,10 @@ int main (int argc, char *argv[])
         Double_t sf_muon[10];
         Double_t sfh_muon[10];
         Double_t sfl_muon[10];
+        Double_t sfIso_muon[10];
+        Double_t sfIsoh_muon[10];
+        Double_t sfIsol_muon[10];
+        Double_t drJet_muon[10];
 		Int_t charge_muon[10];
 		
 		Int_t nJets;
@@ -453,6 +459,7 @@ int main (int argc, char *argv[])
 		Double_t mc_scaleupweight;
 		Double_t mc_scaledownweight;
         Double_t mc_muonsfweight[3];
+        Double_t mc_muonsfweightIso[3];
         Double_t mc_elesfweight[3];
         Double_t mc_btgsfweight1[5];
         Double_t mc_btgsfweight2[5];
@@ -470,12 +477,30 @@ int main (int argc, char *argv[])
 		Int_t trig_muplusjets;
 		Int_t trig_displaced;
 		
+        // cutflow variables:
+        Int_t cutflow_pvcut;
+        Int_t cutflow_ngoodele;
+        Int_t cutflow_ngoodmuo;
+        Int_t cutflow_ngoodjet;
+        Int_t cutflow_ngoodeledisp;
+        Int_t cutflow_ngoodjetdisp;
+        Int_t cutflow_ngoodmuodisp;
+        
 		TTree *bookkeeping = new TTree("startevents","startevents");
 		bookkeeping->Branch("run_num",&run_num,"run_num/I");
 		bookkeeping->Branch("evt_num",&evt_num,"evt_num/I");
 		bookkeeping->Branch("lumi_num",&lumi_num,"lumi_num/I");
 		bookkeeping->Branch("nvtx",&nvtx,"nvtx/I");
 		bookkeeping->Branch("npu",&npu,"npu/I");
+        bookkeeping->Branch("mc_baseweight",&mc_baseweight,"mc_baseweight/D");
+        bookkeeping->Branch("cutflow_pvcut",&cutflow_pvcut,"cutflow_pvcut/I");
+        bookkeeping->Branch("cutflow_ngoodele",&cutflow_ngoodele,"cutflow_ngoodele/I");
+        bookkeeping->Branch("cutflow_ngoodmuo",&cutflow_ngoodmuo,"cutflow_ngoodmuo/I");
+        bookkeeping->Branch("cutflow_ngoodmuodisp",&cutflow_ngoodmuodisp,"cutflow_ngoodmuodisp/I");
+        bookkeeping->Branch("cutflow_ngoodeledisp",&cutflow_ngoodeledisp,"cutflow_ngoodeledisp/I");
+        bookkeeping->Branch("cutflow_ngoodjet",&cutflow_ngoodjet,"cutflow_ngoodjet/I");
+        bookkeeping->Branch("cutflow_ngoodjetdisp",&cutflow_ngoodjetdisp,"cutflow_ngoodjetdisp/I");
+
 		
 		
 		
@@ -497,6 +522,7 @@ int main (int argc, char *argv[])
 		
 		myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
         myTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
+        myTree->Branch("drJet_electron",drJet_electron,"drJet_electron[nElectrons]/D");
         myTree->Branch("sf_electron",sf_electron,"sf_electron[nElectrons]/D");
         myTree->Branch("sfl_electron",sfl_electron,"sfl_electron[nElectrons]/D");
         myTree->Branch("sfh_electron",sfh_electron,"sfh_electron[nElectrons]/D");
@@ -518,9 +544,13 @@ int main (int argc, char *argv[])
         myTree->Branch("sf_muon",sf_muon,"sf_muon[nMuons]/D");
         myTree->Branch("sfl_muon",sfl_muon,"sfl_muon[nMuons]/D");
         myTree->Branch("sfh_muon",sfh_muon,"sfh_muon[nMuons]/D");
+        myTree->Branch("sfIso_muon",sfIso_muon,"sfIso_muon[nMuons]/D");
+        myTree->Branch("sfIsol_muon",sfIsol_muon,"sfIsol_muon[nMuons]/D");
+        myTree->Branch("sfIsoh_muon",sfIsoh_muon,"sfIsoh_muon[nMuons]/D");
 		myTree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
 		myTree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
-		myTree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
+        myTree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
+        myTree->Branch("drJet_muon",drJet_muon,"drJet_muon[nMuons]/D");
 		myTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
 		myTree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
 		myTree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
@@ -551,74 +581,10 @@ int main (int argc, char *argv[])
         myTree->Branch("mc_btgsfweight4",mc_btgsfweight4,"mc_btgsfweight4[5]/D");
 
         
-		// define the output tree
-		TTree* dilepTree = new TTree("dileptree","dileptree");
-		dilepTree->Branch("isdata",&isdata,"isdata/I");
-		dilepTree->Branch("run_num",&run_num,"run_num/I");
-		dilepTree->Branch("evt_num",&evt_num,"evt_num/I");
-		dilepTree->Branch("lumi_num",&lumi_num,"lumi_num/I");
-		dilepTree->Branch("nvtx",&nvtx,"nvtx/I");
-		dilepTree->Branch("npu",&npu,"npu/I");
-		dilepTree->Branch("trig_dilepton_emu",&trig_dilepton_emu,"trig_dilepton_emu/I");
-		dilepTree->Branch("trig_dilepton_ee",&trig_dilepton_ee,"trig_dilepton_ee/I");
-		dilepTree->Branch("trig_dilepton_mumu",&trig_dilepton_mumu,"trig_dilepton_mumu/I");
-		dilepTree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
-		dilepTree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
-		dilepTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
-		
-		
-        dilepTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
-        dilepTree->Branch("pT_electron",pT_electron,"pT_electron[nElectrons]/D");
-        dilepTree->Branch("sf_electron",sf_electron,"sf_electron[nElectrons]/D");
-		dilepTree->Branch("phi_electron",phi_electron,"phi_electron[nElectrons]/D");
-		dilepTree->Branch("eta_electron",eta_electron,"eta_electron[nElectrons]/D");
-		dilepTree->Branch("E_electron",E_electron,"E_electron[nElectrons]/D");
-		dilepTree->Branch("pfIso_electron",pfIso_electron,"pfIso_electron[nElectrons]/D");
-		dilepTree->Branch("charge_electron",charge_electron,"charge_electron[nElectrons]/I");
-		dilepTree->Branch("d0_electron",d0_electron,"d0_electron[nElectrons]/D");
-		dilepTree->Branch("loose_electron",loose_electron,"loose_electron[nElectrons]/I");
-		dilepTree->Branch("medium_electron",medium_electron,"medium_electron[nElectrons]/I");
-		dilepTree->Branch("tight_electron",tight_electron,"tight_electron[nElectrons]/I");
-		//        dilepTree->Branch("mediumMVA_electron",mediumMVA_electron,"mediumMVA_electron[nElectrons]/I");
-		//        dilepTree->Branch("tightMVA_electron",tightMVA_electron,"tightMVA_electron[nElectrons]/I");
-		//
-		
-		
-        dilepTree->Branch("nMuons",&nMuons, "nMuons/I");
-        dilepTree->Branch("pT_muon",pT_muon,"pT_muon[nMuons]/D");
-        dilepTree->Branch("sf_muon",sf_muon,"sf_muon[nMuons]/D");
-		dilepTree->Branch("phi_muon",phi_muon,"phi_muon[nMuons]/D");
-		dilepTree->Branch("eta_muon",eta_muon,"eta_muon[nMuons]/D");
-		dilepTree->Branch("E_muon",E_muon,"E_muon[nMuons]/D");
-		dilepTree->Branch("pfIso_muon",pfIso_muon,"pfIso_muon[nMuons]/D");
-		dilepTree->Branch("charge_muon",charge_muon,"charge_muon[nMuons]/I");
-		dilepTree->Branch("d0_muon",d0_muon,"d0_muon[nMuons]/D");
-		
-		dilepTree->Branch("nJets",&nJets, "nJets/I");
-		dilepTree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
-		dilepTree->Branch("phi_jet",phi_jet,"phi_jet[nJets]/D");
-		dilepTree->Branch("eta_jet",eta_jet,"eta_jet[nJets]/D");
-		dilepTree->Branch("E_jet",E_jet,"E_jet[nJets]/D");
-		dilepTree->Branch("dx_jet",dx_jet,"dx_jet[nJets]/D");
-		dilepTree->Branch("dy_jet",dy_jet,"dy_jet[nJets]/D");
-        dilepTree->Branch("btag_jet",btag_jet,"btag_jet[nJets]/D");
-        dilepTree->Branch("sfb_jet",sfb_jet,"sfb_jet[nJets]/D");
-        dilepTree->Branch("flav_jet",flav_jet,"flav_jet[nJets]/I");
-
-		
-		dilepTree->Branch("missingEt",&missingEt,"missingEt/D");
-		dilepTree->Branch("pu_weight",&pu_weight,"pu_weight/D");
-		dilepTree->Branch("mc_baseweight",&mc_baseweight,"mc_baseweight/D");
-		dilepTree->Branch("mc_scaleupweight",&mc_scaleupweight,"mc_scaleupweight/D");
-        dilepTree->Branch("mc_scaledownweight",&mc_scaledownweight,"mc_scaledownweight/D");
-//        dilepTree->Branch("mc_muonsfweight",mc_muonsfweight,"mc_muonsfweight[3]/D");
-//        dilepTree->Branch("mc_elesfweight",mc_elesfweight,"mc_elesfweight[3]/D");
-//        dilepTree->Branch("mc_btgsfweight",mc_btgsfweight,"mc_btgsfweight[5]/D");
-
-		
-		
-		//        myTree->Print();
-		
+        TTree *dileptree = (TTree*) myTree->Clone("dileptree");
+        
+        TTree *disptree = (TTree*) myTree->Clone("disptree");
+				
 		
         Double_t workleptoneta, workleptonpt;
 		
@@ -776,9 +742,7 @@ int main (int argc, char *argv[])
 				isdata=1;
 			}
 			
-			bookkeeping->Fill();
-			
-			
+            
 			
 			if(! (dataSetName.find("Data") == 0 || dataSetName.find("data") == 0 || dataSetName.find("DATA") == 0 ) && !isdata ) {
 				genjets = treeLoader.LoadGenJet(ievt,false);
@@ -832,10 +796,7 @@ int main (int argc, char *argv[])
 			//selection.setMuonCuts(20,2.5,1.0,2.0,0.3,1,0.5,5,0); // void setMuonCuts(float Pt, float Eta, float RelIso, float d0, float DRJets, int NMatchedStations, float Dz, int NTrackerLayersWithMeas, int NValidPixelHits);
 			//            selection.setElectronCuts(20,2.5,1.0,2.0,0.5,0.4,0); // void setElectronCuts(float Pt, float Eta, float RelIso, float d0, float MVAId, float DRJets, int MaxMissingHits);
 			
-			bool isGoodPV = selection.isPVSelected(vertex, 4, 24, 2.);
-			
-			if(!isGoodPV)
-				continue;
+	
 			
 			missingEt=mets[0]->Pt();
 			
@@ -848,14 +809,16 @@ int main (int argc, char *argv[])
 			//            vector<TRootElectron*> selectedMediumElectronsMVA = selection.GetSelectedElectrons("Medium","PHYS14",false);
 			//            vector<TRootElectron*> selectedTightElectronsMVA = selection.GetSelectedElectrons("Tight","PHYS14",false);
 			
-			
-			vector<TRootElectron*> displacedElectrons = selection.GetSelectedDisplacedElectrons();
-			vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
-			// bookkeeping
-			
+            
+            bool isGoodPV = selection.isPVSelected(vertex, 4, 24, 2.);
+            cutflow_pvcut=isGoodPV;
+           
+            
 			// loop over electrons
 			nElectrons=0;
 			for(int iele=0; iele<selectedElectrons.size() && nElectrons<10; iele++){
+                
+                drJet_electron[nElectrons]=20;
 				pT_electron[nElectrons]=selectedElectrons[iele]->Pt();
 				phi_electron[nElectrons]=selectedElectrons[iele]->Phi();
 				eta_electron[nElectrons]=selectedElectrons[iele]->Eta();
@@ -902,6 +865,8 @@ int main (int argc, char *argv[])
 			// loop over muons
 			nMuons=0;
 			for(int imuo=0; imuo<selectedMuons.size() && nMuons<10; imuo++){
+                
+                drJet_muon[nMuons]=20;
 				pT_muon[nMuons]=selectedMuons[imuo]->Pt();
 				phi_muon[nMuons]=selectedMuons[imuo]->Phi();
 				eta_muon[nMuons]=selectedMuons[imuo]->Eta();
@@ -914,9 +879,13 @@ int main (int argc, char *argv[])
                     workleptonpt=499.999;
                 else if(selectedMuons[imuo]->Pt()<20)
                     workleptonpt=20.0001;
-                sf_muon[nElectrons]=musfweight.at(workleptoneta,workleptonpt);
-                sfh_muon[nElectrons]=musfweight.at(workleptoneta,workleptonpt,1);
-                sfl_muon[nElectrons]=musfweight.at(workleptoneta,workleptonpt,-1);
+                sf_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt);
+                sfh_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt,1);
+                sfl_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt,-1);
+                sfIso_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt);
+                sfIsoh_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt,1);
+                sfIsol_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt,-1);
+
 
 				
 				charge_muon[nMuons]=selectedMuons[imuo]->charge();
@@ -925,6 +894,23 @@ int main (int argc, char *argv[])
 			// loop over jets
 			nJets=0;
 			for(int ijet=0; ijet<selectedJets.size() && nJets<20; ijet++){
+                bool badjet=false;
+                for( int imuo=0; imuo<nMuons; imuo++){
+                    worker.SetPtEtaPhiE(pT_muon[imuo],eta_muon[imuo],phi_muon[imuo],E_muon[imuo]);
+                    if(selectedJets[ijet]->DeltaR(worker)<drJet_muon[imuo])
+                        drJet_muon[imuo]=selectedJets[ijet]->DeltaR(worker);
+                    if(selectedJets[ijet]->DeltaR(worker)<0.4)
+                        badjet=true;
+                }
+                for( int iele=0; iele<nElectrons; iele++){
+                    worker.SetPtEtaPhiE(pT_electron[iele],eta_electron[iele],phi_electron[iele],E_electron[iele]);
+                    if(selectedJets[ijet]->DeltaR(worker)<drJet_electron[iele])
+                        drJet_electron[iele]=selectedJets[ijet]->DeltaR(worker);
+                    if(selectedJets[ijet]->DeltaR(worker)<0.4)
+                        badjet=true;
+                }
+                if(badjet)
+                    continue;
 				pT_jet[nJets]=selectedJets[ijet]->Pt();
 				phi_jet[nJets]=selectedJets[ijet]->Phi();
 				eta_jet[nJets]=selectedJets[ijet]->Eta();
@@ -993,19 +979,140 @@ int main (int argc, char *argv[])
             
 //            cout << "values btag p0: " << p0 << ", " << p0_sf <<" " << p1 << " " << p1_sf   << " " << p2 << " " << p2_sf   <<" " << mc_btgsfweight1[0] << " " << mc_btgsfweight2[0] <<  endl;
 
+            
+            if( isGoodPV){
+			
+                if( nElectrons+nMuons>=2){
+                    dileptree->Fill();
+                }
+                if(nElectrons>=1&&nJets>=4){
+                    myTree->Fill();
+                }
+                else if(nMuons >= 1 && nJets >=4){
+                    myTree->Fill();
+                }
+            }
+            cutflow_ngoodmuo=nMuons;
+            cutflow_ngoodele=nElectrons;
+            cutflow_ngoodjet=nJets;
+         
+            // now repeat the lepton selection for the displaced case:
+            
+            
+            vector<TRootElectron*> displacedElectrons = selection.GetSelectedDisplacedElectrons();
+            vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
+            // bookkeeping
 
-			
-			
-			if( nElectrons+nMuons>=2){
-				dilepTree->Fill();
-			}
-			if(nElectrons>=1&&nJets>=4){
-				myTree->Fill();
-			}
-			else if(nMuons >= 1 && nJets >=4){
-				myTree->Fill();
-			}
-		}			//loop on events
+            
+            nElectrons=0;
+            for(int iele=0; iele<displacedElectrons.size() && nElectrons<10; iele++){
+                
+                drJet_electron[nElectrons]=20;
+                pT_electron[nElectrons]=displacedElectrons[iele]->Pt();
+                phi_electron[nElectrons]=displacedElectrons[iele]->Phi();
+                eta_electron[nElectrons]=displacedElectrons[iele]->Eta();
+                E_electron[nElectrons]=displacedElectrons[iele]->E();
+                d0_electron[nElectrons]=displacedElectrons[iele]->d0();
+                loose_electron[nElectrons]=1;
+                medium_electron[nElectrons]=0;
+                tight_electron[nElectrons]=0;
+                workleptoneta=displacedElectrons[iele]->Eta();
+                workleptonpt=displacedElectrons[iele]->Pt();
+                if(displacedElectrons[iele]->Pt()>500)
+                    workleptonpt=499.999;
+                else if(displacedElectrons[iele]->Pt()<20)
+                    workleptonpt=20.0001;
+                if(fabs(displacedElectrons[iele]->Eta())>2.4)
+                    workleptoneta=2.3999;
+                sf_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt);
+                sfh_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt,1);
+                sfl_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt,-1);
+                
+                pfIso_electron[nElectrons]=displacedElectrons[iele]->relPfIso(3,0);
+                charge_electron[nElectrons]=displacedElectrons[iele]->charge();
+                for(int jele=0; jele<selectedMediumElectrons.size(); jele++){
+                    if (displacedElectrons[iele]->DeltaR(*(selectedMediumElectrons[jele]))<0.001)
+                        medium_electron[nElectrons]=1;
+                }
+                for(int jele=0; jele<selectedTightElectrons.size(); jele++){
+                    if (displacedElectrons[iele]->DeltaR(*(selectedTightElectrons[jele]))<0.001)
+                        tight_electron[nElectrons]=1;
+                }
+                nElectrons++;
+            }
+            // get SFs for electrons
+            // loop over muons
+            nMuons=0;
+            for(int imuo=0; imuo<displacedMuons.size() && nMuons<10; imuo++){
+                
+                drJet_muon[nMuons]=20;
+                pT_muon[nMuons]=displacedMuons[imuo]->Pt();
+                phi_muon[nMuons]=displacedMuons[imuo]->Phi();
+                eta_muon[nMuons]=displacedMuons[imuo]->Eta();
+                E_muon[nMuons]=displacedMuons[imuo]->E();
+                d0_muon[nMuons]=displacedMuons[imuo]->d0();
+                pfIso_muon[nMuons]=displacedMuons[imuo]->relPfIso(3,0);
+                workleptonpt=displacedMuons[imuo]->Pt();
+                workleptoneta=displacedMuons[imuo]->Eta();
+                if(displacedMuons[imuo]->Pt()>500)
+                    workleptonpt=499.999;
+                else if(displacedMuons[imuo]->Pt()<20)
+                    workleptonpt=20.0001;
+                sf_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt);
+                sfh_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt,1);
+                sfl_muon[nMuons]=musfweight.at(workleptoneta,workleptonpt,-1);
+                sfIso_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt);
+                sfIsoh_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt,1);
+                sfIsol_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt,-1);
+                
+                
+                charge_muon[nMuons]=displacedMuons[imuo]->charge();
+                nMuons++;
+            }
+            // and redo the jet cleaning:
+            nJets=0;
+            for(int ijet=0; ijet<selectedJets.size() && nJets<20; ijet++){
+                bool badjet=false;
+                for( int imuo=0; imuo<nMuons; imuo++){
+                    worker.SetPtEtaPhiE(pT_muon[imuo],eta_muon[imuo],phi_muon[imuo],E_muon[imuo]);
+                    if(selectedJets[ijet]->DeltaR(worker)<drJet_muon[imuo])
+                        drJet_muon[imuo]=selectedJets[ijet]->DeltaR(worker);
+                    if(selectedJets[ijet]->DeltaR(worker)<0.4)
+                        badjet=true;
+                }
+                for( int iele=0; iele<nElectrons; iele++){
+                    worker.SetPtEtaPhiE(pT_electron[iele],eta_electron[iele],phi_electron[iele],E_electron[iele]);
+                    if(selectedJets[ijet]->DeltaR(worker)<drJet_electron[iele])
+                        drJet_electron[iele]=selectedJets[ijet]->DeltaR(worker);
+                    if(selectedJets[ijet]->DeltaR(worker)<0.4)
+                        badjet=true;
+                }
+                if(badjet)
+                    continue;
+                pT_jet[nJets]=selectedJets[ijet]->Pt();
+                phi_jet[nJets]=selectedJets[ijet]->Phi();
+                eta_jet[nJets]=selectedJets[ijet]->Eta();
+                E_jet[nJets]=selectedJets[ijet]->E();
+                dx_jet[nJets]=selectedJets[ijet]->vx();
+                dy_jet[nJets]=selectedJets[ijet]->vy();
+                btag_jet[nJets]=selectedJets[ijet]->btag_combinedInclusiveSecondaryVertexV2BJetTags();
+                flav_jet[nJets]=selectedJets[ijet]->hadronFlavour();
+                sfb_jet[nJets]=1.0;
+                nJets++;
+            }
+            cutflow_ngoodmuodisp=nMuons;
+            cutflow_ngoodeledisp=nElectrons;
+            cutflow_ngoodjetdisp=nJets;
+            
+            if( isGoodPV){
+                
+                if( nElectrons+nMuons>=2){
+                    disptree->Fill();
+                }
+            }
+            bookkeeping->Fill();
+            
+		}//loop on events
 		
 		
 		
