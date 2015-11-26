@@ -20,20 +20,34 @@ do
 
     echo $fileoutname
 
-	pbsoutname=$sampledir"/"$outname".pbs"
-	echo "pbs file = "$pbsoutname
-	cat dummypbs.pbs > $pbsoutname
+    pbsoutname=$sampledir"/"$outname".pbs"
+    echo "pbs file = "$pbsoutname
+    cat dummypbs.pbs > $pbsoutname
 #	echo "cp \$DESTDIR/"$fileoutname" infile.xml" >> $pbsoutname
-	echo "\$DESTDIR/Ntupler \$DESTDIR/"$fileoutname >> $pbsoutname
-	echo " mv "$rootfilename" \$DESTDIR/"$sampledir"/." >> $pbsoutname
-	cat $pbsoutname | sed -e s%"/user/fblekman/localgrid/"%"/localgrid/fblekman/"%g > tmpfile
-	mv tmpfile $pbsoutname
+    echo "\$DESTDIR/Ntupler \$DESTDIR/"$fileoutname >> $pbsoutname
+    echo " mv "$rootfilename" \$DESTDIR/"$sampledir"/." >> $pbsoutname
+    cat $pbsoutname | sed -e s%"/user/fblekman/localgrid/"%"/localgrid/fblekman/"%g > tmpfile
+    mv tmpfile $pbsoutname
 #cat $pbsoutname
+    queue="short"
+    if [[ `echo $outname | grep 13TeV` ]]  # it's MC!
+    then
+	queue="localgrid"
+	# and increase the run time:
+	cat $pbsoutname | sed -e s%"walltime=1:14:59"%"walltime=3:00:00"%g > tmpfile
+    mv tmpfile $pbsoutname
+    fi
 
-	qsub -q short $pbsoutname
+    qsub -q $queue $pbsoutname
 
 
     let "counter++"
     let "ii++"
+    if [[ $ii == 200 ]]
+    then
+	echo "sleeping for a while to check batch privileges"
+	sleep 30
+	$ii=0
+    fi
 done
 echo "done!" 
