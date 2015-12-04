@@ -1,6 +1,7 @@
 import os, sys
 import ROOT as rt
 import CMS_lumi, tdrstyle
+import FreyaLib as fl
 import array
 import time
 
@@ -11,12 +12,15 @@ print datetime
 #set the tdr style
 tdrstyle.setTDRStyle()
 
-luminosity= 0.533+0.711+0.335+0.017
+luminosity= (16344578.402/1000000000.)+(887308177.909/1000000000.)+(1558092799.428/1000000000.) # electrons
+#luminosity= (16344578.402/1000000000.)+(886373910.964/1000000000.)#+(1557667314.725/1000000000.) # muons
 
-CMS_lumi.lumi_13TeV="L #approx "+str(luminosity)+" fb^{-1}"
+
+CMS_lumi.lumi_13TeV="L #approx "+str(luminosity)+" fb^{-1} (SILVER)"
 print "luminosity is: ",luminosity
 CMS_lumi.writeExtraText = 1
 CMS_lumi.extraText = "Work in Progress, e+4jets+2CSVM"
+#CMS_lumi.extraText = "Work in Progress, #mu+4jets+2CSVM"
 
 
 iPos = 10
@@ -33,7 +37,8 @@ B = 0.12*H_ref
 L = 0.12*W_ref
 R = 0.04*W_ref
 
-canvas = rt.TCanvas("c2","c2",50,50,W,H)
+#canvas = rt.TCanvas("c2","c2",50,50,W,H)
+canvas = fl.makeDivCan()
 canvas.SetFillColor(0)
 canvas.SetBorderMode(0)
 canvas.SetFrameFillStyle(0)
@@ -45,19 +50,20 @@ canvas.SetBottomMargin( B/H )
 canvas.SetTickx(0)
 canvas.SetTicky(0)
 
-file=rt.TFile("output_electron_2015-10-28.root","read")
-#file=rt.TFile("output_muons.root","read")
+
+file=rt.TFile("output_electron_2015-12-04.root","read")
+#file=rt.TFile("output_muon_2015-12-04.root","read")
 #file=rt.TFile("output_displaced.root","read")
 file.ls()
 #file.ls()
 #listofnames=["h_eled0_","h_mud0_"]
-#listofnames=["h_elenjets_","h_elezpeak_","h_elenvtx_","h_elept_","h_eleeta_","h_eleIso_"]
-listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_","h_elenjets_","h_elept_","h_eleIso_","h_eled0zoom_","h_eleht_","h_elehtbinned_"]
+#listofnames=["h_muonvtx_","h_muonopunvtx_","h_muozpeak_","h_muonjets_","h_muopt_","h_muoIso_","h_muod0zoom_","h_muoht_","h_muohtbinned_","h_muoDR_"]
+listofnames=["h_elenvtx_","h_elenopunvtx_","h_elezpeak_","h_elenjets_","h_elept_","h_eleIso_","h_eled0zoom_","h_eleht_","h_elehtbinned_","h_eleDR_"]
 dirname="plots_"+datetime
 rt.gSystem.mkdir(dirname)
 for histname in listofnames :
-    print "now making plots: ",histname
-    canv =  rt.TCanvas("c2","c2",50,50,W,H)
+    print "now making plots for: ",histname
+    canv = fl.makeDivCan()
     canv.SetFillColor(0)
     canv.SetBorderMode(0)
     canv.SetFrameFillStyle(0)
@@ -105,7 +111,7 @@ for histname in listofnames :
     stack.Add(hist_tt,"f")
 
 
-    canv.cd()
+    canv.cd(1)
     hist_data.SetYTitle("events")
     hist_data.Draw("ex0")
     hist_tttt.Draw("histsame")
@@ -133,12 +139,23 @@ for histname in listofnames :
     hist_data.SetMinimum(0.01)
     hist_data.SetMaximum(20*hist_data.GetMaximum())
     rt.gPad.SetLogy()
-    canv.cd()
-    CMS_lumi.CMS_lumi(canv, 4, iPos)
+    canv.cd(1)
+    CMS_lumi.CMS_lumi(rt.gPad, 4, iPos)
     canv.Update()
     canv.RedrawAxis()
     frame = canv.GetFrame()
     frame.Draw()
+    canv.cd(2)
+    rt.gPad.SetGridy()
+    ratioplotH = fl.makeRatioDiff(hist_data,stack)
+    ratioplotH.SetMaximum(1.)
+    ratioplotH.SetMinimum(-1.)
+    ratioplotH.Draw()
+    line = rt.TLine(ratioplotH.GetBinLowEdge(1),0,ratioplotH.GetBinLowEdge(ratioplotH.GetNbinsX()+1),0)
+    line.SetLineColor(rt.kRed)
+    line.SetLineStyle(1)
+    line.Draw("same")
+    canv.cd()
     canv.Print(dirname+"/"+histname+"stackplot"+datetime+".png")
     canv.Print(dirname+"/"+histname+"stackplot"+datetime+".pdf")
     canv.Print(dirname+"/"+histname+"stackplot"+datetime+".C")

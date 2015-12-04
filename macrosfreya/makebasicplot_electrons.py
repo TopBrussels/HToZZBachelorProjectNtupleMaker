@@ -1,6 +1,9 @@
 import os, sys
 import ROOT
 import time
+import array
+
+import FreyaLib as fl
 ##############
 # example pyroot loop for histogram making on output trees of Ntupler
 # January 2015 by freya.blekman@cern.ch
@@ -24,6 +27,8 @@ b_eleeta = ROOT.TH1F("b_eleeta","electron #eta",100,-4,4)
 b_eleeta.SetXTitle("electron #eta")
 b_eled0 = ROOT.TH1F("b_eled0","electron |d_{0}|",200,0,2)
 b_eled0.SetXTitle("electron d_{0} [cm]")
+b_eleDR = ROOT.TH1F("b_eleDR","electron dR wrt closest jet",200,0,2)
+b_eleDR.SetXTitle("electron jet #Delta R")
 b_eled0zoom = ROOT.TH1F("b_eled0zoom","electron |d_{0}|",200,0,0.02)
 b_eled0zoom.SetXTitle("electron d_{0} [cm]")
 b_eleIso = ROOT.TH1F("b_eleIso",":electron pfIso:electrons",100,0,1)
@@ -42,7 +47,7 @@ b_elehtbinned=ROOT.TH1F("b_elehtbinned","",60,0,6000)
 b_elehtbinned.SetXTitle("H_{T} [GeV]")
 
 
-
+skipsample=[0,0,0,0,0,0,0]
 names=["Wjets","Zjets","ttbar","tw","atw","tttt","data"]
 colors=[ROOT.kGreen-3,ROOT.kAzure-2,ROOT.kRed+1,ROOT.kPink,ROOT.kPink,ROOT.kGray,ROOT.kBlack]
 xsecs=[20508.9*3,2008.4*3,831.76,35.85,35.85,0.009,-1]
@@ -52,11 +57,12 @@ filenames=["ntuples/WJetsToLNu_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8*.root",
            "ntuples/ST_tW_top_5f_inclusiveDecays_13TeV-powheg*.root",
            "ntuples/ST_tW_antitop_5f_inclusiveDecays_13TeV-powheg-*.root",
            "ntuples/TTTT_TuneCUETP8M1_13TeV-amcatnlo-pythia8.root",
-           "ntuples/SingleElectron-Run2015D-Prompt*.root"]
-
+           "ntuples/SingleElectron-Run2015*.root"]
+sfnegeventratios=[16518190.0997,9052671,11339232,995600,1000000,415094.011903,-1,-1,-1]
 startevcounts=[0.,0.,0.,0.,0.,0.,0.,0.,0.]
 ntupleevcounts=[0.,0,0.,0.,0.,0.,0.,0.,0.,0.]
 storedevents=[0.,0.,0.,0.,0.,0.,0.,0.,0.]
+
 
 #print runlist
 for isam in range(len(names)) :
@@ -78,9 +84,12 @@ runlist=[]
 
 # start of loop over events
 for isam in range(len(xsecs)) :
+    if skipsample[isam]==1 :
+        continue
     ch = ROOT.TChain("tree","tree")
 #    ch = ROOT.TChain("dileptree","dileptree")
     ch.Add(filenames[isam])
+#    ch.Print()
     
     bookkeeping = ROOT.TChain("startevents","startevents")
     bookkeeping.Add(filenames[isam])
@@ -91,6 +100,7 @@ for isam in range(len(xsecs)) :
     h_elept=b_elept.Clone("h_elept_"+names[isam])
     h_eleeta=b_eleeta.Clone("h_eleeta_"+names[isam])
     h_eled0=b_eled0.Clone("h_eled0_"+names[isam])
+    h_eleDR=b_eleDR.Clone("h_eleDR_"+names[isam])
     h_eled0zoom=b_eled0zoom.Clone("h_eled0zoom_"+names[isam])
     h_eleIso=b_eleIso.Clone("h_eleIso_"+names[isam])
     h_elenjets=b_elenjets.Clone("h_elenjets_"+names[isam])
@@ -119,6 +129,7 @@ for isam in range(len(xsecs)) :
         mcweight=1  # because then it's data!
     h_elept.SetLineColor(colors[isam])
     h_eleeta.SetLineColor(colors[isam])
+    h_eleDR.SetLineColor(colors[isam])
     h_eled0.SetLineColor(colors[isam])
     h_eled0zoom.SetLineColor(colors[isam])
     h_eleIso.SetLineColor(colors[isam])
@@ -134,6 +145,7 @@ for isam in range(len(xsecs)) :
         h_elept.SetFillColor(colors[isam])
         h_eleeta.SetFillColor(colors[isam])
         h_eled0.SetFillColor(colors[isam])
+        h_eleDR.SetFillColor(colors[isam])
         h_eled0zoom.SetFillColor(colors[isam])
         h_eleIso.SetFillColor(colors[isam])
         h_elenjets.SetFillColor(colors[isam])
@@ -146,9 +158,19 @@ for isam in range(len(xsecs)) :
 
 
 
+    mcweightssf=0.0;
+    if sfnegeventratios[isam] < 0:
+        if xsecs[isam] > 0 :
+            for iev in bookkeeping:
+                mcweightssf+=iev.mc_baseweight
+        else :
+            mcweightssf=bookkeeping.GetEntries()
+    else :
+        mcweightssf =sfnegeventratios[isam]
 
+    print "now running on sample ",filenames[isam]," with xsec:",xsecs[isam]," and lumi ",lumi, " and events: ", nevents," (started with ",neventsstart,"),  giving an MC weight of",mcweight," baseweight: ",mcweightssf
+    mcweight*=mcweightssf/neventsstart
 
-    print "now running on sample ",filenames[isam]," with xsec:",xsecs[isam]," and lumi ",lumi, " and events: ", nevents," (started with ",neventsstart,"),  giving an MC weight of",mcweight
     for iev in ch:
         if ii % 10000 ==0 :
             print ii, "/", nevents
@@ -175,21 +197,45 @@ for isam in range(len(xsecs)) :
         ntags=0
 
         ht=0
+
+        #ad-hoc calculation of btag sfs:
+        arraywithsfs=[]
+        
         for ijet in range(0, iev.nJets) :
             lvjet.SetPtEtaPhiE(iev.pT_jet[ijet],iev.eta_jet[ijet],iev.phi_jet[ijet],iev.E_jet[ijet])
             h_elejetpt.Fill(lvjet.Pt(),totalweight)
             ht+=lvjet.Pt()
+            arraywithsfs.append(max(0,min(iev.effb_jet[ijet]*iev.sfb_jet[ijet],1.0)))
+            #            print "btag sfs:",arraywithoutsfs[ijet],arraywithsfs[ijet]
             if iev.btag_jet[ijet] > 0.890 :
                 ntags+=1
 
-        if ntags < 2 :
-            continue
+
+        if workxsec ==-1:
+            if ntags < 2 :
+                continue
+
+        #        totalweight*=iev.mc_btgsfweight2[0]
+#        totalweightnopu*=iev.mc_btgsfweight2[0]
+
+        if workxsec == -1:
+            totalweight = 1
+            totalweightnopu = 1
+
+        
+        if workxsec != -1:
+            bsfin=1.-fl.p0(arraywithsfs)-fl.p1(arraywithsfs)
+            totalweight*=bsfin
+            totalweightnopu*=bsfin
 
         ngoodelectrons = 0
         if workxsec == -1 :
             #reset weight for data:
             totalweight=1 
 # loop over electrons - fill in lorentz vector and fill some histograms
+
+
+
         for iele in range(0,iev.nElectrons) :
             if iev.tight_electron[iele] == 0 :
                 continue
@@ -200,18 +246,30 @@ for isam in range(len(xsecs)) :
                 if iev.tight_electron[iele-1] ==0 :
                     continue
                 lve.SetPtEtaPhiE(iev.pT_electron[iele-1],iev.eta_electron[iele-1],iev.phi_electron[iele-1],iev.E_electron[iele-1])
-				
-                h_elezpeak.Fill((lve+lvmu).M(),totalweight*lepweight*iev.sfl_electron[iele-1])
-            h_elept.Fill(lvmu.Pt(),totalweight*lepweight)
-            h_eleeta.Fill(lvmu.Eta(),totalweight*lepweight)
-            h_eled0.Fill(abs(iev.d0_electron[iele]),totalweight*lepweight)
-            h_eled0zoom.Fill(abs(iev.d0_electron[iele]),totalweight*lepweight)
-            h_eleIso.Fill(iev.pfIso_electron[iele],totalweight*lepweight)
+                if workxsec != -1 :
+                    h_elezpeak.Fill((lve+lvmu).M(),totalweight*lepweight*iev.sfl_electron[iele-1])
+                else :
+                    h_elezpeak.Fill((lve+lvmu).M(),1)
+            if workxsec == -1 :
+                h_elept.Fill(lvmu.Pt(),1)
+                h_eleeta.Fill(lvmu.Eta(),1)
+                h_eled0.Fill(abs(iev.d0_electron[iele]),1)
+                h_eled0zoom.Fill(abs(iev.d0_electron[iele]),1)
+                h_eleIso.Fill(iev.pfIso_electron[iele],1)
+                h_eleDR.Fill(iev.drJet_electron[iele],1)
 
+            else :
+                h_elept.Fill(lvmu.Pt(),totalweight*lepweight)
+                h_eleeta.Fill(lvmu.Eta(),totalweight*lepweight)
+                h_eled0.Fill(abs(iev.d0_electron[iele]),totalweight*lepweight)
+                h_eled0zoom.Fill(abs(iev.d0_electron[iele]),totalweight*lepweight)
+                h_eleIso.Fill(iev.pfIso_electron[iele],totalweight*lepweight)
+                h_eleDR.Fill(iev.drJet_electron[iele],totalweight*lepweight)
+
+        totalweight*=lepweight
+        totalweightnopu*=lepweight
 #        print "mc weight = ",totalweight
         if ngoodelectrons == 1:
-            totalweight=lepweight*totalweight
-            totalweightnopu=lepweight*totalweightnopu
             if workxsec == -1:
                 totalweight = 1
                 totalweightnopu = 1
