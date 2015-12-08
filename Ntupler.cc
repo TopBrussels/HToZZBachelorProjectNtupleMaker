@@ -765,9 +765,9 @@ int main (int argc, char *argv[])
         disptree->Branch("dzbs_muon",dzbs_muon,"dzbs_muon[nMuons]/D");
         disptree->Branch("d0bs_muon",d0bs_muon,"d0bs_muon[nMuons]/D");
         
-        disptree->Branch("loose_muons",loose_muon,"loose_muon[nMuons]/I");
-        disptree->Branch("medium_muons",medium_muon,"medium_muon[nMuons]/I");
-        disptree->Branch("tight_muons",tight_muon,"tight_muon[nMuons]/I");
+        disptree->Branch("loose_muon",loose_muon,"loose_muon[nMuons]/I");
+        disptree->Branch("medium_muon",medium_muon,"medium_muon[nMuons]/I");
+        disptree->Branch("tight_muon",tight_muon,"tight_muon[nMuons]/I");
         
         disptree->Branch("nJets",&nJets, "nJets/I");
         disptree->Branch("pT_jet",pT_jet,"pT_jet[nJets]/D");
@@ -1090,7 +1090,8 @@ int main (int argc, char *argv[])
                 d0_muon[nMuons]=selectedMuons[imuo]->d0();
                 d0bs_muon[nMuons]=selectedMuons[imuo]->d0BeamSpot();
                 //                dzbs_muon[nMuons]=selectedMuons[imuo]->dzBeamSpot();
-                pfIso_muon[nMuons]=selectedMuons[imuo]->relPfIso(3,0);
+		//                pfIso_muon[nMuons]=selectedMuons[imuo]->relPfIso(4,0);
+		pfIso_muon[nMuons]=(selectedMuons[imuo]->chargedHadronIso(4) + max( 0.0, selectedMuons[imuo]->neutralHadronIso(4) + selectedMuons[imuo]->photonIso(4) - 0.5*selectedMuons[imuo]->puChargedHadronIso(4) ) ) / selectedMuons[imuo]->Pt(); // dBeta corrected
                 workleptonpt=selectedMuons[imuo]->Pt();
                 workleptoneta=selectedMuons[imuo]->Eta();
                 if(selectedMuons[imuo]->Pt()>120)
@@ -1232,6 +1233,7 @@ int main (int argc, char *argv[])
             vector<TRootMuon*> displacedMuonsTight = selection.GetSelectedDisplacedMuons(0,2.5,25,false,false);
             vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
             
+	    //	    std::cout << displacedElectrons.size()  << " " << displacedElectronsLoose.size() << " " << displacedElectronsMedium.size() << " " << displacedElectronsTight.size() << " " << displacedMuonsLoose.size() << " " << displacedMuonsMedium.size() << " " << displacedMuonsTight.size() << " " << displacedMuons.size() << std::endl;
             // bookkeeping
             
             
@@ -1247,7 +1249,7 @@ int main (int argc, char *argv[])
                 
                 d0bs_electron[nElectrons]=displacedElectronsLoose[iele]->d0BeamSpot();
                 dzbs_electron[nElectrons]=displacedElectronsLoose[iele]->dzBeamSpot();
-                loose_electron[nElectrons]=1;
+                loose_electron[nElectrons]=0;
                 medium_electron[nElectrons]=0;
                 tight_electron[nElectrons]=0;
                 workleptoneta=displacedElectronsLoose[iele]->Eta();
@@ -1266,15 +1268,15 @@ int main (int argc, char *argv[])
                 charge_electron[nElectrons]=displacedElectronsLoose[iele]->charge();
                 for(int jele=0; jele<displacedElectrons.size(); jele++){
                     if (displacedElectronsLoose[iele]->DeltaR(*(displacedElectrons[jele]))<0.001)
-                    loose_electron[nElectrons]=1;
+                    tight_electron[nElectrons]=1;
                 }
                 for(int jele=0; jele<displacedElectronsMedium.size(); jele++){
                     if (displacedElectronsLoose[iele]->DeltaR(*(displacedElectronsMedium[jele]))<0.001)
-                    medium_electron[nElectrons]=1;
+                    loose_electron[nElectrons]=1;
                 }
                 for(int jele=0; jele<displacedElectronsTight.size(); jele++){
                     if (displacedElectronsLoose[iele]->DeltaR(*(displacedElectronsTight[jele]))<0.001)
-                    tight_electron[nElectrons]=1;
+                    medium_electron[nElectrons]=1;
                 }
                 
                 nElectrons++;
@@ -1294,6 +1296,8 @@ int main (int argc, char *argv[])
                 d0bs_muon[nMuons]=displacedMuonsLoose[imuo]->d0BeamSpot();
                 dzbs_muon[nMuons]=displacedMuonsLoose[imuo]->dzBeamSpot();
                 pfIso_muon[nMuons]=displacedMuonsLoose[imuo]->relPfIso(3,0);
+                                                     
+                pfIso_muon[nMuons]=(displacedMuonsLoose[imuo]->chargedHadronIso(4) + max( 0.0, displacedMuonsLoose[imuo]->neutralHadronIso(4) + displacedMuonsLoose[imuo]->photonIso(4) - 0.5*displacedMuonsLoose[imuo]->puChargedHadronIso(4) ) ) / displacedMuonsLoose[imuo]->Pt(); // dBeta corrected      
                 workleptonpt=displacedMuonsLoose[imuo]->Pt();
                 workleptoneta=displacedMuonsLoose[imuo]->Eta();
                 if(displacedMuonsLoose[imuo]->Pt()>120)
@@ -1314,20 +1318,20 @@ int main (int argc, char *argv[])
                 
                 
                 charge_muon[nMuons]=displacedMuonsLoose[imuo]->charge();
-                
+                loose_muon[nMuons]=medium_muon[nMuons]=tight_muon[nMuons]=0;
                 // now check:
                 for(int jmuo=0; jmuo<displacedMuons.size(); jmuo++){
                     if (displacedMuonsLoose[imuo]->DeltaR(*(displacedMuons[jmuo]))<0.001)
-                    id_muon[nMuons]=1;
+                    tight_muon[nMuons]=1;
                 }
                 for(int jmuo=0; jmuo<displacedMuonsMedium.size(); jmuo++){
                     if (displacedMuonsLoose[imuo]->DeltaR(*(displacedMuonsMedium[jmuo]))<0.001)
-                    id_muon[nMuons]=1;
+                    loose_muon[nMuons]=1;
                 }
                 
                 for(int jmuo=0; jmuo<displacedMuonsTight.size(); jmuo++){
                     if (displacedMuonsLoose[imuo]->DeltaR(*(displacedMuonsTight[jmuo]))<0.001)
-                    id_muon[nMuons]=1;
+                    medium_muon[nMuons]=1;
                 }
                 
                 
