@@ -280,20 +280,27 @@ int main (int argc, char *argv[])
     //	Loop on datasets
     ////////////////////////////////////
     
-    // trigger infos: (from https://twiki.cern.ch/twiki/bin/view/CMS/TopTrigger )
-    
-    
-    
-    
+    // last revisted on 11 dec 2015, https://twiki.cern.ch/twiki/bin/view/CMS/TopTrigger#Run2015C_D_25_ns_data_with_RunII
     std::vector<std::string> mujetstriggers;
+    // newer triggers
+    mujetstriggers.push_back("HLT_IsoMu18_v*");
+    mujetstriggers.push_back("HLT_IsoMu17_eta2p1_v*");
+    mujetstriggers.push_back("HLT_IsoMu20_v*");
+    mujetstriggers.push_back("HLT_IsoTkMu20_v*");
+
+// older triggers
     mujetstriggers.push_back("HLT_IsoMu20_eta2p1_v*");
     mujetstriggers.push_back("HLT_IsoMu20_eta2p1_TriCentralPFJet30_v*");
     mujetstriggers.push_back("HLT_IsoMu20_eta2p1_TriCentralPFJet50_40_30_v*");
     mujetstriggers.push_back("HLT_IsoMu20_eta2p1_v*");
     mujetstriggers.push_back("HLT_IsoMu20_eta2p1_TriCentralPFJet30_v*");
     mujetstriggers.push_back("HLT_IsoMu20_eta2p1_TriCentralPFJet50_40_30_v*");
+    
     std::vector<std::string> ejetstriggers;
+    ejetstriggers.push_back("HLT_Ele23_WPLoose_Gsf_v*");
     ejetstriggers.push_back("HLT_Ele27_eta2p1_WPLoose_Gsf_v*");
+    ejetstriggers.push_back("HLT_Ele27_eta2p1_WP75_Gsf_v*");
+    ejetstriggers.push_back("HLT_Ele22_eta2p1_WP75_Gsf_v*");
     ejetstriggers.push_back("HLT_Ele27_eta2p1_WPLoose_Gsf_TriCentralPFJet30_v*");
     ejetstriggers.push_back("HLT_Ele27_eta2p1_WPLoose_Gsf_TriCentralPFJet50_40_30_v*");
     ejetstriggers.push_back("HLT_Ele27_eta2p1_WP75_Gsf_v*");
@@ -322,33 +329,40 @@ int main (int argc, char *argv[])
     displtriggers.push_back("HLT_Mu28NoFiltersNoVtxDisplaced_Photon28_CaloIdL_v*");
     displtriggers.push_back("HLT_Mu33NoFiltersNoVtxDisplaced_Photon33_CaloIdL_v*");
     
+    std::vector<std::string> alltriggers;
     
     std::map<std::string,std::pair<int,bool> > triggermap;
     // book all these in the trigger map so it can be used later:
     for(UInt_t itrig=0; itrig<mumutriggers.size(); itrig++){
         triggermap[mumutriggers[itrig]]=std::pair<int,bool>(-999,false);
+        alltriggers.push_back(mumutriggers[itrig]);
     }
     for(UInt_t itrig=0; itrig<mujetstriggers.size(); itrig++){
         triggermap[mujetstriggers[itrig]]=std::pair<int,bool>(-999,false);
+        alltriggers.push_back(mujetstriggers[itrig]);
+
     }
     for(UInt_t itrig=0; itrig<emutriggers.size(); itrig++){
         triggermap[emutriggers[itrig]]=std::pair<int,bool>(-999,false);
+        alltriggers.push_back(mumutriggers[itrig]);
+
     }
     for(UInt_t itrig=0; itrig<eetriggers.size(); itrig++){
         triggermap[eetriggers[itrig]]=std::pair<int,bool>(-999,false);
+        alltriggers.push_back(emutriggers[itrig]);
+
     }
     for(UInt_t itrig=0; itrig<ejetstriggers.size(); itrig++){
         triggermap[ejetstriggers[itrig]]=std::pair<int,bool>(-999,false);
+        alltriggers.push_back(ejetstriggers[itrig]);
+
     }
     for(UInt_t itrig=0; itrig<displtriggers.size(); itrig++){
         triggermap[displtriggers[itrig]]=std::pair<int,bool>(-999,false);
+        alltriggers.push_back(displtriggers[itrig]);
+
     }
     
-    for(std::map<std::string,std::pair<int,bool> >::iterator trigiter = triggermap.begin(); trigiter != triggermap.end(); trigiter++){
-        std::pair<int,bool> bla = trigiter->second;
-        std::string bla2 = trigiter->first;
-        
-    }
     
     // all sorts of calibration loading:
     BTagCalibration btagsfweight_hf("CSVv2","/localgrid/fblekman/analysis/CMSSW_7_6_1/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/JP_13TeV_25ns_combToMujets.csv");
@@ -503,6 +517,7 @@ int main (int argc, char *argv[])
         Int_t trig_eplusjets;
         Int_t trig_muplusjets;
         Int_t trig_displaced;
+        Int_t triggers_container[200];
         
         // cutflow variables:
         Int_t cutflow_pvcut;
@@ -545,6 +560,7 @@ int main (int argc, char *argv[])
         myTree->Branch("trig_eplusjets",&trig_eplusjets,"trig_eplusjets/I");
         myTree->Branch("trig_muplusjets",&trig_muplusjets,"trig_muplusjets/I");
         myTree->Branch("trig_displaced",&trig_displaced,"trig_displaced/I");
+
         
         
         myTree->Branch("nElectrons",&nElectrons, "nElectrons/I");
@@ -797,7 +813,18 @@ int main (int argc, char *argv[])
         disptree->Branch("id_muon",id_muon,"id_muon[nMuons]/I");
         
         
-        
+        // automated branch adding for individual triggers:
+        // limited by size of triggers_container!!
+        for(int iter_trig=0; iter_trig<alltriggers.size() && iter_trig<200; iter_trig++){
+            TString trigname = alltriggers[iter_trig];
+            trigname.ReplaceAll("_v*","");
+            TString branchname = trigname+"/I";
+            std::cout << "adding trigger to trees " << trigname << " mapped to element " << iter_trig << " " << branchname << std::endl;
+            myTree->Branch(trigname,&(triggers_container[iter_trig]),branchname);
+            dileptree->Branch(trigname,&(triggers_container[iter_trig]),branchname);
+            disptree->Branch(trigname,&(triggers_container[iter_trig]),branchname);
+            
+        }
         
         
         
@@ -902,7 +929,6 @@ int main (int argc, char *argv[])
             
             // get trigger info:
             
-            
             for(std::map<std::string,std::pair<int,bool> >::iterator iter = triggermap.begin(); iter != triggermap.end(); iter++){
                 if(redotrigmap){
                     Int_t loc= treeLoader.iTrigger(iter->first, currentRun,iFile);
@@ -945,6 +971,12 @@ int main (int argc, char *argv[])
             for(UInt_t itrig=0; itrig<displtriggers.size() && trig_displaced==0; itrig++){
                 if(triggermap[displtriggers[itrig]].second)
                 trig_displaced=1;
+            }
+            
+            for(UInt_t itrig=0; itrig<alltriggers.size() && itrig<200; itrig++){
+                triggers_container[itrig]=0;
+                if(triggermap[alltriggers[itrig]].second)
+                    triggers_container[itrig]=1;
             }
             
             run_num=event->runId();
@@ -1225,11 +1257,11 @@ int main (int argc, char *argv[])
             
             
             vector<TRootElectron*> displacedElectrons = selection.GetSelectedDisplacedElectrons();
-            vector<TRootElectron*> displacedElectronsLoose = selection.GetSelectedDisplacedElectrons(0,2.5,true,true);
-            vector<TRootElectron*> displacedElectronsMedium = selection.GetSelectedDisplacedElectrons(0,2.5,true,false);
+            vector<TRootElectron*> displacedElectronsLoose = selection.GetSelectedDisplacedElectrons(0,2.5,true,false);
+            vector<TRootElectron*> displacedElectronsMedium = selection.GetSelectedDisplacedElectrons(0,2.5,false,true);
             vector<TRootElectron*> displacedElectronsTight = selection.GetSelectedDisplacedElectrons(0,2.5,false,false);
-            vector<TRootMuon*> displacedMuonsLoose = selection.GetSelectedDisplacedMuons(0,2.5,25,true,true);
-            vector<TRootMuon*> displacedMuonsMedium= selection.GetSelectedDisplacedMuons(0,2.5,25,true,false);
+            vector<TRootMuon*> displacedMuonsLoose = selection.GetSelectedDisplacedMuons(0,2.5,25,true,false);
+            vector<TRootMuon*> displacedMuonsMedium= selection.GetSelectedDisplacedMuons(0,2.5,25,false,true);
             vector<TRootMuon*> displacedMuonsTight = selection.GetSelectedDisplacedMuons(0,2.5,25,false,false);
             vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
             
@@ -1238,46 +1270,60 @@ int main (int argc, char *argv[])
             
             
             nElectrons=0;
-            for(int iele=0; iele<displacedElectronsLoose.size() && nElectrons<10; iele++){
+            for(int iele=0; iele<init_electrons.size() && nElectrons<10; iele++){
                 
                 drJet_electron[nElectrons]=20;
-                pT_electron[nElectrons]=displacedElectronsLoose[iele]->Pt();
-                phi_electron[nElectrons]=displacedElectronsLoose[iele]->Phi();
-                eta_electron[nElectrons]=displacedElectronsLoose[iele]->Eta();
-                E_electron[nElectrons]=displacedElectronsLoose[iele]->E();
-                d0_electron[nElectrons]=displacedElectronsLoose[iele]->d0();
+                pT_electron[nElectrons]=init_electrons[iele]->Pt();
+                phi_electron[nElectrons]=init_electrons[iele]->Phi();
+                eta_electron[nElectrons]=init_electrons[iele]->Eta();
+                E_electron[nElectrons]=init_electrons[iele]->E();
+                d0_electron[nElectrons]=init_electrons[iele]->d0();
                 
-                d0bs_electron[nElectrons]=displacedElectronsLoose[iele]->d0BeamSpot();
-                dzbs_electron[nElectrons]=displacedElectronsLoose[iele]->dzBeamSpot();
+                d0bs_electron[nElectrons]=init_electrons[iele]->d0BeamSpot();
+                dzbs_electron[nElectrons]=init_electrons[iele]->dzBeamSpot();
                 loose_electron[nElectrons]=0;
                 medium_electron[nElectrons]=0;
                 tight_electron[nElectrons]=0;
-                workleptoneta=displacedElectronsLoose[iele]->Eta();
-                workleptonpt=displacedElectronsLoose[iele]->Pt();
-                if(displacedElectronsLoose[iele]->Pt()>500)
+                id_electron[nElectrons]=0;
+                workleptoneta=init_electrons[iele]->Eta();
+                workleptonpt=init_electrons[iele]->Pt();
+                if(init_electrons[iele]->Pt()>500)
                 workleptonpt=499.999;
-                else if(displacedElectronsLoose[iele]->Pt()<20)
+                else if(init_electrons[iele]->Pt()<20)
                 workleptonpt=20.0001;
-                if(fabs(displacedElectronsLoose[iele]->Eta())>2.4)
+                if(fabs(init_electrons[iele]->Eta())>2.4)
                 workleptoneta=2.3999;
                 sf_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt);
                 sfh_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt,1);
                 sfl_electron[nElectrons]=elesfweight.at(workleptoneta,workleptonpt,-1);
                 
-                pfIso_electron[nElectrons]=displacedElectronsLoose[iele]->relPfIso(3,0);
-                charge_electron[nElectrons]=displacedElectronsLoose[iele]->charge();
-                for(int jele=0; jele<displacedElectrons.size(); jele++){
-                    if (displacedElectronsLoose[iele]->DeltaR(*(displacedElectrons[jele]))<0.001)
-                    tight_electron[nElectrons]=1;
+                pfIso_electron[nElectrons]=init_electrons[iele]->relPfIso(3,0);
+                charge_electron[nElectrons]=init_electrons[iele]->charge();
+                for(int jele=0; jele<displacedElectronsLoose.size(); jele++){
+                    if (init_electrons[iele]->DeltaR(*(displacedElectronsLoose[jele]))<0.001){
+                        loose_electron[nElectrons]=1;
+                        break;
+                    }
                 }
                 for(int jele=0; jele<displacedElectronsMedium.size(); jele++){
-                    if (displacedElectronsLoose[iele]->DeltaR(*(displacedElectronsMedium[jele]))<0.001)
-                    loose_electron[nElectrons]=1;
+                    if (init_electrons[iele]->DeltaR(*(displacedElectronsMedium[jele]))<0.001){
+                        medium_electron[nElectrons]=1;
+                        break;
+                    }
                 }
                 for(int jele=0; jele<displacedElectronsTight.size(); jele++){
-                    if (displacedElectronsLoose[iele]->DeltaR(*(displacedElectronsTight[jele]))<0.001)
-                    medium_electron[nElectrons]=1;
+                    if (init_electrons[iele]->DeltaR(*(displacedElectronsTight[jele]))<0.001){
+                        tight_electron[nElectrons]=1;
+                        break;
+                    }
                 }
+                for(int jele=0; jele<displacedElectrons.size(); jele++){
+                    if (init_electrons[iele]->DeltaR(*(displacedElectrons[jele]))<0.001){
+                        id_electron[nElectrons]=1;
+                        break;
+                    }
+                }
+
                 
                 nElectrons++;
             }
@@ -1285,24 +1331,24 @@ int main (int argc, char *argv[])
             // loop over muons
             nMuons=0;
             
-            for(int imuo=0; imuo<displacedMuonsLoose.size() && nMuons<10; imuo++){
+            for(int imuo=0; imuo<init_muons.size() && nMuons<10; imuo++){
                 
                 drJet_muon[nMuons]=20;
-                pT_muon[nMuons]=displacedMuonsLoose[imuo]->Pt();
-                phi_muon[nMuons]=displacedMuonsLoose[imuo]->Phi();
-                eta_muon[nMuons]=displacedMuonsLoose[imuo]->Eta();
-                E_muon[nMuons]=displacedMuonsLoose[imuo]->E();
-                d0_muon[nMuons]=displacedMuonsLoose[imuo]->d0();
-                d0bs_muon[nMuons]=displacedMuonsLoose[imuo]->d0BeamSpot();
-                dzbs_muon[nMuons]=displacedMuonsLoose[imuo]->dzBeamSpot();
-                pfIso_muon[nMuons]=displacedMuonsLoose[imuo]->relPfIso(3,0);
+                pT_muon[nMuons]=init_muons[imuo]->Pt();
+                phi_muon[nMuons]=init_muons[imuo]->Phi();
+                eta_muon[nMuons]=init_muons[imuo]->Eta();
+                E_muon[nMuons]=init_muons[imuo]->E();
+                d0_muon[nMuons]=init_muons[imuo]->d0();
+                d0bs_muon[nMuons]=init_muons[imuo]->d0BeamSpot();
+                dzbs_muon[nMuons]=init_muons[imuo]->dzBeamSpot();
+                pfIso_muon[nMuons]=init_muons[imuo]->relPfIso(3,0);
                                                      
-                pfIso_muon[nMuons]=(displacedMuonsLoose[imuo]->chargedHadronIso(4) + max( 0.0, displacedMuonsLoose[imuo]->neutralHadronIso(4) + displacedMuonsLoose[imuo]->photonIso(4) - 0.5*displacedMuonsLoose[imuo]->puChargedHadronIso(4) ) ) / displacedMuonsLoose[imuo]->Pt(); // dBeta corrected      
-                workleptonpt=displacedMuonsLoose[imuo]->Pt();
-                workleptoneta=displacedMuonsLoose[imuo]->Eta();
-                if(displacedMuonsLoose[imuo]->Pt()>120)
+                pfIso_muon[nMuons]=(init_muons[imuo]->chargedHadronIso(4) + max( 0.0, init_muons[imuo]->neutralHadronIso(4) + init_muons[imuo]->photonIso(4) - 0.5*init_muons[imuo]->puChargedHadronIso(4) ) ) / init_muons[imuo]->Pt(); // dBeta corrected
+                workleptonpt=init_muons[imuo]->Pt();
+                workleptoneta=init_muons[imuo]->Eta();
+                if(init_muons[imuo]->Pt()>120)
                 workleptonpt=119.999;
-                else if(displacedMuonsLoose[imuo]->Pt()<20)
+                else if(init_muons[imuo]->Pt()<20)
                 workleptonpt=20.0001;
                 if(workleptoneta>2.4)
                 workleptoneta=2.39999;
@@ -1317,22 +1363,36 @@ int main (int argc, char *argv[])
                 sfIsol_muon[nMuons]=musfweightIso.at(workleptoneta,workleptonpt,-1);
                 
                 
-                charge_muon[nMuons]=displacedMuonsLoose[imuo]->charge();
-                loose_muon[nMuons]=medium_muon[nMuons]=tight_muon[nMuons]=0;
+                charge_muon[nMuons]=init_muons[imuo]->charge();
+                loose_muon[nMuons]=medium_muon[nMuons]=tight_muon[nMuons]=id_muon[nMuons]=0;
                 // now check:
-                for(int jmuo=0; jmuo<displacedMuons.size(); jmuo++){
-                    if (displacedMuonsLoose[imuo]->DeltaR(*(displacedMuons[jmuo]))<0.001)
-                    tight_muon[nMuons]=1;
+                for(int jmuo=0; jmuo<displacedMuonsLoose.size(); jmuo++){
+                    if (init_muons[imuo]->DeltaR(*(displacedMuonsLoose [jmuo]))<0.001){
+                        loose_muon[nMuons]=1;
+                        break;
+                    }
+                    
                 }
                 for(int jmuo=0; jmuo<displacedMuonsMedium.size(); jmuo++){
-                    if (displacedMuonsLoose[imuo]->DeltaR(*(displacedMuonsMedium[jmuo]))<0.001)
-                    loose_muon[nMuons]=1;
+                    if (init_muons[imuo]->DeltaR(*(displacedMuonsMedium[jmuo]))<0.001){
+                        medium_muon[nMuons]=1;
+                        break;
+                    }
                 }
                 
                 for(int jmuo=0; jmuo<displacedMuonsTight.size(); jmuo++){
-                    if (displacedMuonsLoose[imuo]->DeltaR(*(displacedMuonsTight[jmuo]))<0.001)
-                    medium_muon[nMuons]=1;
+                    if (init_muons[imuo]->DeltaR(*(displacedMuonsTight[jmuo]))<0.001){
+                        tight_muon[nMuons]=1;
+                        break;
+                    }
                 }
+                for(int jmuo=0; jmuo<displacedMuons.size(); jmuo++){
+                    if (init_muons[imuo]->DeltaR(*(displacedMuons[jmuo]))<0.001){
+                        id_muon[nMuons]=1;
+                        break;
+                    }
+                }
+
                 
                 
                 
