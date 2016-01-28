@@ -10,7 +10,7 @@
     
 
 
-<d name="NAME"  title="t\bar{t}+jets MadGraph PHYS14"   add="1"   color="633"  ls="1"  lw="2" normf="1"  EqLumi="30594.15" xsection="831.76"   PreselEff="0.0"   filenames="dcap://maite.iihe.ac.beFILENAME"/> 
+<d name="NAME"  title="t\bar{t}+jets MadGraph PHYS14"   add="1"   color="633"  ls="1"  lw="2" normf="1"  EqLumi="30594.15" xsection="831.76"   PreselEff="0.0"   filenames="FILENAME"/> 
 
 
 </datasets>

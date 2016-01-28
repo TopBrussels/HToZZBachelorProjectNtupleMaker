@@ -1051,9 +1051,9 @@ int main (int argc, char *argv[])
 	// get the 'good' objects from the selection object
 	vector<TRootPFJet*> selectedJets= selection.GetSelectedJets();
 	vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons();
-	vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons("Loose","PHYS14",true);
-	vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","PHYS14",true);
-	vector<TRootElectron*> selectedTightElectrons = selection.GetSelectedElectrons("Tight","PHYS14",true);
+	vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons("Loose","Spring15_25ns",true);
+	vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","Spring15_25ns",true);
+	vector<TRootElectron*> selectedTightElectrons = selection.GetSelectedElectrons("Tight","Spring15_25ns",true);
 	//            vector<TRootElectron*> selectedMediumElectronsMVA = selection.GetSelectedElectrons("Medium","PHYS14",false);
 	//            vector<TRootElectron*> selectedTightElectronsMVA = selection.GetSelectedElectrons("Tight","PHYS14",false);
             
@@ -1065,7 +1065,8 @@ int main (int argc, char *argv[])
 	// loop over electrons
 	nElectrons=0;
 	for(int iele=0; iele<selectedElectrons.size() && nElectrons<10; iele++){
-                
+	  if ( selectedElectrons[iele]->Pt() < 20)
+	    continue;
 	  drJet_electron[nElectrons]=20;
 	  pT_electron[nElectrons]=selectedElectrons[iele]->Pt();
 	  phi_electron[nElectrons]=selectedElectrons[iele]->Phi();
@@ -1115,7 +1116,8 @@ int main (int argc, char *argv[])
 	// loop over muons
 	nMuons=0;
 	for(int imuo=0; imuo<selectedMuons.size() && nMuons<10; imuo++){
-                
+	  if (selectedMuons[imuo]->Pt() < 20)
+	    continue;
 	  drJet_muon[nMuons]=20;
 	  pT_muon[nMuons]=selectedMuons[imuo]->Pt();
 	  phi_muon[nMuons]=selectedMuons[imuo]->Phi();
