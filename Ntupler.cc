@@ -887,9 +887,9 @@ int main (int argc, char *argv[])
             // LOAD EVENT //
             ////////////////
             
-            cout << "loading event " << ievt << " !" << endl;
+	    //            cout << "loading event " << ievt << " !" << endl;
             TRootEvent* event = treeLoader.LoadEvent (ievt, vertex, init_muons, init_electrons, init_jets_corrected, mets);
-            cout << "done loading event " << ievt << "! " << endl;
+	    //            cout << "done loading event " << ievt << "! " << endl;
             std::map<std::string, std::vector<TopTree::triggeredObject> > trigfilters = event->getTriggerFilters();
             /////////////////////////////////
             // print when you change file  //
@@ -1445,7 +1445,7 @@ int main (int argc, char *argv[])
             }
             bookkeeping->Fill();
             
-            cout << "done with event " << ievt << endl;
+	    //            cout << "done with event " << ievt << endl;
             
         }//loop on events
         
