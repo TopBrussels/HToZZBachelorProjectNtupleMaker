@@ -361,26 +361,26 @@ int main (int argc, char *argv[])
     
     
     // all sorts of calibration loading:
-    BTagCalibration btagsfweight_hf("CSVv2","/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/JP_13TeV_25ns_combToMujets.csv");
+    BTagCalibration btagsfweight_hf("CSVv2","/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/JP_13TeV_25ns_combToMujets.csv");
     BTagCalibrationReader btagsfreader(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
     BTagCalibrationReader btagsfreadercomb(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
     
     
-    MuonSFWeight musfweight("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonID_Z_RunD_Reco74X_Nov20.root","NUM_MediumID_DEN_genTracks_PAR_pt_spliteta_bin1/abseta_pt_ratio");
-    MuonSFWeight musfweightIso("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonIso_Z_RunD_Reco74X_Nov20.root","NUM_LooseRelIso_DEN_MediumID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+    MuonSFWeight musfweight("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonID_Z_RunD_Reco74X_Nov20.root","NUM_MediumID_DEN_genTracks_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+    MuonSFWeight musfweightIso("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonIso_Z_RunD_Reco74X_Nov20.root","NUM_LooseRelIso_DEN_MediumID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
     
-    ElectronSFWeight elesfweight("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Elec_SF_TopEA.root","GlobalSF");
+    ElectronSFWeight elesfweight("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Elec_SF_TopEA.root","GlobalSF");
     
     cout << "initiating lumi weights: " << endl;
-    LumiReWeighting LumiWeights("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root","/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run246908-260627Cert_Silver.root","pileup50","pileup");
+    LumiReWeighting LumiWeights("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIIFall15DR76-Asympt25ns.root","/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data76X_25ns-Run246908-260627Cert_Silver.root","pileup","pileup");
     cout << "done loading lumi weights " << endl;
-    //  TFile *file_pu_data = new TFile("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run246908-260627Cert_Silver.root","READ");
+    //  TFile *file_pu_data = new TFile("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run246908-260627Cert_Silver.root","READ");
     //  file_pu_data->cd();
     //  TH1D* pu_weight_histo = (TH1D*) file_pu_data->Get("pileup");
     //  pu_weight_histo->SetDirectory(0);
     //  pu_weight_histo->Scale(1. / pu_weight_histo->Integral());
     //  pu_weight_histo->SetName("pu_weight_histo");
-    //  TFile *file_pu_mc = new TFile("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root","READ");
+    //  TFile *file_pu_mc = new TFile("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring15DR74-Asympt25ns.root","READ");
     //  file_pu_mc->cd();
     //  TH1D* pu_weight_histo_denom = (TH1D*) file_pu_mc->Get("pileup");
     //  pu_weight_histo_denom->Scale(1./ pu_weight_histo_denom->Integral());
@@ -391,7 +391,7 @@ int main (int argc, char *argv[])
     
     
     
-    TFile *btagcalibs = new TFile("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/HToZZBachelorProjectNtupleMaker/output_btagging.root","READ");
+    TFile *btagcalibs = new TFile("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/HToZZBachelorProjectNtupleMaker/output_btagging.root","READ");
     btagcalibs->cd();
     
     std::map<int,TH2D*> btag_efficiencies;
@@ -841,7 +841,7 @@ int main (int argc, char *argv[])
         
         vector<JetCorrectorParameters> vCorrParam;
         
-        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("/localgrid/fblekman/analysis/CMSSW_7_6_3/src/TopBrussels/TopTreeAnalysisBase/Calibrations/JECFiles/Summer15_25nsV2_DATA_UncertaintySources_AK4PFchs.txt", "Total")));
+        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/JECFiles/Fall15_25nsV2_MC_UncertaintySources_AK4PFchs.txt", "Total")));
         
         // true means redo also the L1 corrections (see CMS documentation to learn what this means)
         JetTools *jetTools = new JetTools(vCorrParam, jecUnc, true);
@@ -1263,12 +1263,12 @@ int main (int argc, char *argv[])
             
             
             vector<TRootElectron*> displacedElectrons = selection.GetSelectedDisplacedElectrons();
-            vector<TRootElectron*> displacedElectronsLoose = selection.GetSelectedDisplacedElectrons(0,2.5);
-            vector<TRootElectron*> displacedElectronsMedium = selection.GetSelectedDisplacedElectrons(0,2.5);
-            vector<TRootElectron*> displacedElectronsTight = selection.GetSelectedDisplacedElectrons(0,2.5);
-            vector<TRootMuon*> displacedMuonsLoose = selection.GetSelectedDisplacedMuons(0,2.5,25);
-            vector<TRootMuon*> displacedMuonsMedium= selection.GetSelectedDisplacedMuons(0,2.5,25);
-            vector<TRootMuon*> displacedMuonsTight = selection.GetSelectedDisplacedMuons(0,2.5,25);
+            vector<TRootElectron*> displacedElectronsLoose = selection.GetSelectedDisplacedElectrons();
+            vector<TRootElectron*> displacedElectronsMedium = selection.GetSelectedDisplacedElectrons();
+            vector<TRootElectron*> displacedElectronsTight = selection.GetSelectedDisplacedElectrons();
+            vector<TRootMuon*> displacedMuonsLoose = selection.GetSelectedDisplacedMuons();
+            vector<TRootMuon*> displacedMuonsMedium= selection.GetSelectedDisplacedMuons();
+            vector<TRootMuon*> displacedMuonsTight = selection.GetSelectedDisplacedMuons();
             vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
             
             //	    std::cout << displacedElectrons.size()  << " " << displacedElectronsLoose.size() << " " << displacedElectronsMedium.size() << " " << displacedElectronsTight.size() << " " << displacedMuonsLoose.size() << " " << displacedMuonsMedium.size() << " " << displacedMuonsTight.size() << " " << displacedMuons.size() << std::endl;
