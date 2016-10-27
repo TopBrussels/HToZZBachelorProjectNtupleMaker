@@ -1053,9 +1053,9 @@ int main (int argc, char *argv[])
             // get the 'good' objects from the selection object
             vector<TRootPFJet*> selectedJets= selection.GetSelectedJets();
             vector<TRootMuon*> selectedMuons = selection.GetSelectedMuons();
-            vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons("Loose","Spring15_25ns",true);
-            vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","Spring15_25ns",true);
-            vector<TRootElectron*> selectedTightElectrons = selection.GetSelectedElectrons("Tight","Spring15_25ns",true);
+            vector<TRootElectron*> selectedElectrons = selection.GetSelectedElectrons("Loose","Spring16_80X",true);
+            vector<TRootElectron*> selectedMediumElectrons = selection.GetSelectedElectrons("Medium","Spring16_80X",true);
+            vector<TRootElectron*> selectedTightElectrons = selection.GetSelectedElectrons("Tight","Spring16_80X",true);
             //            vector<TRootElectron*> selectedMediumElectronsMVA = selection.GetSelectedElectrons("Medium","PHYS14",false);
             //            vector<TRootElectron*> selectedTightElectronsMVA = selection.GetSelectedElectrons("Tight","PHYS14",false);
             
