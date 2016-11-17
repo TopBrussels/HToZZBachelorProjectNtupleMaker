@@ -49,13 +49,9 @@ do
 
     pbsoutname=$sampledir"/"$outname".pbs"
     echo "pbs file = "$pbsoutname
-    cat dummypbs.pbs > $pbsoutname
-#	echo "cp \$DESTDIR/"$fileoutname" infile.xml" >> $pbsoutname
+    cat dummypbs.pbs | sed -e s%working%`pwd`%g > $pbsoutname
     echo "\$DESTDIR/Ntupler \$DESTDIR/"$fileoutname >> $pbsoutname
     echo " mv "$rootfilename" \$DESTDIR/"$sampledir"/." >> $pbsoutname
-    cat $pbsoutname | sed -e s%"/user/fblekman/localgrid/"%"/localgrid/fblekman/"%g > tmpfile
-    mv tmpfile $pbsoutname
-#cat $pbsoutname
     queue="localgrid"
     cat $pbsoutname | sed -e s%"walltime=1:14:59"%"walltime=0:30:00"%g > tmpfile
     mv tmpfile $pbsoutname
