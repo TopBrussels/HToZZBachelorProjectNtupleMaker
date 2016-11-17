@@ -1,0 +1,3 @@
+ls /pnfs/iihe/cms/store/user/fblekman/TopTree/CMSSW_80X_v1/TTP-CMSSW_80X_v1--GT-80X_mcRun2_asymptotic_2016_miniAODv2_v1/ | awk '{print "ls /pnfs/iihe/cms/store/user/fblekman/TopTree/CMSSW_80X_v1/TTP-CMSSW_80X_v1--GT-80X_mcRun2_asymptotic_2016_miniAODv2_v1/"$1"/*/*/*/*.root > "$1".txt"}' | sh
+ls /pnfs/iihe/cms/store/user/fblekman/TopTree/CMSSW_80X_v1-Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON_NoL1T/TTP-CMSSW_80X_v1-Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON_NoL1T--GT-80X_dataRun2_2016SeptRepro_v3/*/*/161109_* | grep : | awk -F":" '{print $1}' | awk -F"/" '{print "ls /"$2"/"$3"/"$4"/"$5"/"$6"/"$7"/"$8"/"$9"/"$10"/"$11"/"$12"/"$13"/*/*.root > "$12".txt"}'  | sh
+ls *.txt | awk -F"." '{print ".  ./submit.sh "$1".txt "$1}'| sh
