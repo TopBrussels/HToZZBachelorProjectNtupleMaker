@@ -27,7 +27,7 @@ treename="displtree"
 outname="dummyfilename.root"
 infile="../CMSSW_80X_v1-ntuples/*DoubleEG*.root"
 xsec=1
-luminosity=35000
+lumi=35000
 if args.nMuons :
     nMuo=float(args.nMuons)
     skimmuo=True
@@ -43,9 +43,9 @@ if args.output :
 if args.pTcut :
     minpt=float(args.pTcut)
 if args.xsec :
-    xsec=args.xsec
+    xsec=float(args.xsec)
 if args.lumi :
-    luminosity=args.lumi
+    lumi=float(args.lumi)
 print skimmuo,skimele,nMuo,nEle,treename,infile,outname,minpt
 
 
@@ -63,7 +63,7 @@ bookkeepingtree = ROOT.TChain("startevents","startevents")
 bookkeepingtree.Add(infile)
 
 skimweight=array.array("d",[0.0])
-skimweight[0]=xsec*luminosity/bookkeepingtree.GetEntries()
+skimweight[0]=xsec*lumi/bookkeepingtree.GetEntries()
 newbranch = newtree.Branch("skimweight",skimweight,"skimweight/D")
 
 print skimweight
