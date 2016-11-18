@@ -1,4 +1,4 @@
-import os, sys, getopt, argparse
+import os, sys, getopt, argparse,array
 import ROOT
 ##############
 # example pyroot loop for histogram making on output trees of Ntupler
@@ -25,10 +25,10 @@ outname="dummyfilename.root"
 infile="../CMSSW_80X_v1-ntuples/*DoubleEG*.root"
 
 if args.nMuons :
-    nMuo=args.nMuons
+    nMuo=float(args.nMuons)
     skimmuo=True
 if args.nElectrons :
-    nEle=args.nElectrons
+    nEle=float(args.nElectrons)
     skimele=True
 if args.tree :
     treename=args.tree
@@ -37,8 +37,8 @@ if args.input :
 if args.output :
     outname=args.output
 if args.pTcut :
-    minpt=args.pTcut
-print nMuo,nEle,treename,infile,outname
+    minpt=float(args.pTcut)
+print skimmuo,skimele,nMuo,nEle,treename,infile,outname,minpt
 
 
 # the analysis structure see TTree/TChain description on root.cern.ch
@@ -51,6 +51,15 @@ ch.Add(infile)
 newfile = ROOT.TFile(outname,"recreate")
 newtree = ch.CloneTree(0)
 
+bookkeepingtree = ROOT.TChain("startevents","startevents")
+bookkeepingtree.Add(infile)
+
+skimweight=array.array("d",[0.0])
+skimweight[0]=bookkeepingtree.GetEntries()
+newbranch = newtree.Branch("skimweight",skimweight,"skimweight/D")
+
+print skimweight
+
 # book some histograms
 # using lorentz vectors as easy to calculate angles, pseudorapidity, etc
 lvmu=ROOT.TLorentzVector()
@@ -59,11 +68,12 @@ lve2=ROOT.TLorentzVector()
 # for bookkeeping
 ii=0
 nevents=ch.GetEntries()
-
+ntimes=100000
 # start of loop over events
 for iev in ch:
-    if ii % 100000 ==0 :
-        print ii, "/", nevents
+    
+    if ii % ntimes ==0 and ii!= 0 :
+        print ii, "/", nevents, " fraction skimmed ",100*newtree.GetEntries()/ii,"%"
     ii+=1
 # comment out the following lines if you are testing, it stops after a certain number of events
 #    if ii==10000 :
@@ -80,21 +90,27 @@ for iev in ch:
 
 # loop over electrons - fill in lorentz vector and fill some histograms
     if skimele == True :
-        if iev.nElectrons< nEle:
+#        print iev.nElectrons
+        if iev.nElectrons < nEle:
             continue
+#        print iev.nElectrons
         ngoodele=0
-        for ii in range(0,iev.nElectrons):
-            if iev.pT_electron[ii] >= ptcut :
+        for iele in range(0,iev.nElectrons):
+#            print iev.pT_electron[iele]
+            if iev.pT_electron[iele] >= minpt :
                 ngoodele+=1
         if ngoodele < nEle :
             continue
         newtree.Fill()
     elif skimmuo == True :
+#        print iev.nMuons
         if iev.nMuons < nMuo:
             continue
+#        print iev.nMuons
         ngoodmuo=0
-        for ii in range(0,iev.nMuons):
-            if iev.pT_muon[ii] >= ptcut :
+        for imu in range(0,iev.nMuons):
+#            print iev.pT_muon[imu]
+            if iev.pT_muon[imu] >= minpt :
                 ngoodmuo+=1
         if ngoodmuo < nMuo :
             continue
