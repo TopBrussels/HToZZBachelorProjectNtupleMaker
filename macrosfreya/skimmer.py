@@ -11,6 +11,9 @@ parser.add_argument('-t','--tree', help='Name of tree',required=False)
 parser.add_argument('-nMu','--nMuons', help='number of muons cut',required=False)
 parser.add_argument('-nEl','--nElectrons', help='number of electrons cut',required=False)
 parser.add_argument('-pt','--pTcut',help='min pT cut', required=False)
+parser.add_argument('-x','--xsec',help='cross section, in pb', required=False)
+parser.add_argument('-l','--lumi',help='luminosity, in pb', required=False)
+
 args = parser.parse_args()
 
 print args
@@ -23,7 +26,8 @@ nEle=0
 treename="displtree"
 outname="dummyfilename.root"
 infile="../CMSSW_80X_v1-ntuples/*DoubleEG*.root"
-
+xsec=1
+luminosity=35000
 if args.nMuons :
     nMuo=float(args.nMuons)
     skimmuo=True
@@ -38,6 +42,10 @@ if args.output :
     outname=args.output
 if args.pTcut :
     minpt=float(args.pTcut)
+if args.xsec :
+    xsec=args.xsec
+if args.lumi :
+    luminosity=args.lumi
 print skimmuo,skimele,nMuo,nEle,treename,infile,outname,minpt
 
 
@@ -55,7 +63,7 @@ bookkeepingtree = ROOT.TChain("startevents","startevents")
 bookkeepingtree.Add(infile)
 
 skimweight=array.array("d",[0.0])
-skimweight[0]=bookkeepingtree.GetEntries()
+skimweight[0]=xsec*luminosity/bookkeepingtree.GetEntries()
 newbranch = newtree.Branch("skimweight",skimweight,"skimweight/D")
 
 print skimweight
