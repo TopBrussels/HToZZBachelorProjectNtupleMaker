@@ -1,6 +1,6 @@
 #!/bin/bash
 
-nsplit=5
+nsplit=10
 njobs=25
 counter=0
 ii=0
@@ -65,7 +65,17 @@ do
 
 
     qsub -q $queue $pbsoutname
-    
+
+    if [ "$?" = "1" ]; then
+	#failed to submit!
+	echo "failed to submit job "$pbsoutname", trying again in 10 sec"
+	sleep 10
+	qsub -q $queue $pbsoutname
+	if [ "$?" = "1" ]; then
+	    sleep 1
+            qsub -q $queue $pbsoutname
+	fi
+    fi
 
 
     let "counter++"
