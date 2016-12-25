@@ -264,6 +264,7 @@ int main (int argc, char *argv[])
     cout << "********************************************************" << endl;
     
     
+    string pathToTTAB="/user/fblekman/DisplacedSusy2016/CMSSW_8_0_22/src/TopBrussels/HToZZBachelorProjectNtupleMaker/..";
     
     //Global variable
     //TRootEvent* event = 0;
@@ -361,18 +362,19 @@ int main (int argc, char *argv[])
     
     
     // all sorts of calibration loading:
-    BTagCalibration btagsfweight_hf("CSVv2","/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/BTagging/JP_13TeV_25ns_combToMujets.csv");
+    BTagCalibration btagsfweight_hf("CSVv2",pathToTTAB+"/TopTreeAnalysisBase/Calibrations/BTagging/CSVv2_80X_ichep_incl_ChangedTo_mujets.csv");
     BTagCalibrationReader btagsfreader(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
     BTagCalibrationReader btagsfreadercomb(&btagsfweight_hf,BTagEntry::OP_MEDIUM,"mujets","central");
     
     
-    MuonSFWeight musfweight("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonID_Z_RunD_Reco74X_Nov20.root","NUM_MediumID_DEN_genTracks_PAR_pt_spliteta_bin1/abseta_pt_ratio");
-    MuonSFWeight musfweightIso("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonIso_Z_RunD_Reco74X_Nov20.root","NUM_LooseRelIso_DEN_MediumID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
-    
-    ElectronSFWeight elesfweight("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/LeptonSF/Elec_SF_TopEA.root","GlobalSF");
+    MuonSFWeight musfweight(pathToTTAB+"/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonSF/MuonID_Z_RunBCD_prompt80X_7p65.root","NUM_MediumID_DEN_genTracks_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+    MuonSFWeight musfweightIso(pathToTTAB+"/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonSF/MuonIso_Z_RunBCD_prompt80X_7p65.root","NUM_LooseRelIso_DEN_MediumID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+    MuonSFWeight musfweightTrig(pathToTTAB+"/TopTreeAnalysisBase/Calibrations/LeptonSF/MuonSF/SingleMuonTrigger_Z_RunBCD_prompt80X_7p65.root","NUM_LooseRelIso_DEN_MediumID_PAR_pt_spliteta_bin1/abseta_pt_ratio");
+                            
+    ElectronSFWeight elesfweight(pathToTTAB+"/TopTreeAnalysisBase/Calibrations/LeptonSF/ElectronSF/egammaEffi.txt_SF2D_CutBasedMediumID.root","GlobalSF");
     
     cout << "initiating lumi weights: " << endl;
-    LumiReWeighting LumiWeights("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIIFall15DR76-Asympt25ns.root","/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data76X_25ns-Run246908-260627Cert_Silver.root","pileup","pileup");
+    LumiReWeighting LumiWeights(pathToTTAB+"/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_MC_RunIISpring16MiniAODv2-Asympt.root",pathToTTAB+"/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2016Data80X_Run271036-284044Cert__Full2016DataSet.root","pileup","pileup");
     cout << "done loading lumi weights " << endl;
     //  TFile *file_pu_data = new TFile("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/PileUpReweighting/pileup_2015Data74X_25ns-Run246908-260627Cert_Silver.root","READ");
     //  file_pu_data->cd();
@@ -840,8 +842,9 @@ int main (int argc, char *argv[])
         //////////////////////////////////////////////////
         
         vector<JetCorrectorParameters> vCorrParam;
-        
-        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("/user/fblekman/TopTreeWork76X/TTP76Xv1/CMSSW_7_6_5/src/TopBrussels/TopTreeAnalysisBase/Calibrations/JECFiles/Fall15_25nsV2_MC_UncertaintySources_AK4PFchs.txt", "Total")));
+        // data: /user/fblekman/DisplacedSusy2016/CMSSW_8_0_22/src/TopBrussels/HToZZBachelorProjectNtupleMaker/../TopTreeAnalysisBase/Calibrations/JECFiles/Spring16_25nsV10/Spring16_25nsV10p2_DATA_UncertaintySources_AK4PFchs.txt
+        // MC: /user/fblekman/DisplacedSusy2016/CMSSW_8_0_22/src/TopBrussels/HToZZBachelorProjectNtupleMaker/../TopTreeAnalysisBase/Calibrations/JECFiles/Spring16_25nsV10/Spring16_25nsV10_MC_Uncertainty_AK4PFchs.txt
+        JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(*(new JetCorrectorParameters("/user/fblekman/DisplacedSusy2016/CMSSW_8_0_22/src/TopBrussels/HToZZBachelorProjectNtupleMaker/../TopTreeAnalysisBase/Calibrations/JECFiles/Spring16_25nsV10/Spring16_25nsV10_MC_Uncertainty_AK4PFchs.txt", "Total")));
         
         // true means redo also the L1 corrections (see CMS documentation to learn what this means)
         JetTools *jetTools = new JetTools(vCorrParam, jecUnc, true);
@@ -1266,9 +1269,9 @@ int main (int argc, char *argv[])
             vector<TRootElectron*> displacedElectronsLoose = selection.GetSelectedDisplacedElectrons();
             vector<TRootElectron*> displacedElectronsMedium = selection.GetSelectedDisplacedElectrons();
             vector<TRootElectron*> displacedElectronsTight = selection.GetSelectedDisplacedElectrons();
-            vector<TRootMuon*> displacedMuonsLoose = selection.GetSelectedDisplacedMuons();
-            vector<TRootMuon*> displacedMuonsMedium= selection.GetSelectedDisplacedMuons();
-            vector<TRootMuon*> displacedMuonsTight = selection.GetSelectedDisplacedMuons();
+            vector<TRootMuon*> displacedMuonsLoose = selection.GetSelectedDisplacedMuons(20, 2.5, 50, false, false);
+            vector<TRootMuon*> displacedMuonsMedium= selection.GetSelectedDisplacedMuons(20, 2.5, 50, false, true);
+            vector<TRootMuon*> displacedMuonsTight = selection.GetSelectedDisplacedMuons(20, 2.5, 50, true, true);
             vector<TRootMuon*> displacedMuons = selection.GetSelectedDisplacedMuons();
             
             //	    std::cout << displacedElectrons.size()  << " " << displacedElectronsLoose.size() << " " << displacedElectronsMedium.size() << " " << displacedElectronsTight.size() << " " << displacedMuonsLoose.size() << " " << displacedMuonsMedium.size() << " " << displacedMuonsTight.size() << " " << displacedMuons.size() << std::endl;

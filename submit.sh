@@ -65,13 +65,12 @@ do
 
 
     qsub -q $queue $pbsoutname
-
-    if [ "$?" = "1" ]; then
+    if [ "$?" != "0" ]; then
 	#failed to submit!
 	echo "failed to submit job "$pbsoutname", trying again in 10 sec"
 	sleep 10
 	qsub -q $queue $pbsoutname
-	if [ "$?" = "1" ]; then
+	if [ "$?" != "0" ]; then
 	    sleep 1
             qsub -q $queue $pbsoutname
 	fi
