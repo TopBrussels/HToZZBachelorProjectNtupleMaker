@@ -31,7 +31,7 @@ source $VO_CMS_SW_DIR/cmsset_default.sh
 eval `scram runtime -sh`
 cmsenv
 
-SCRATCHDIR=/scratch/fblekman/
+SCRATCHDIR=$TMPDIR
 mkdir $SCRATCHDIR
 cd $SCRATCHDIR
 echo "changed dir to :" 
